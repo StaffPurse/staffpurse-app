@@ -1,3 +1,4 @@
+import 'landing_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:bkey_uikit/bkey_uikit.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -69,7 +70,26 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Setup Profile')),
+            appBar: AppBar(
+        title: const Text('Setup Profile'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: 'Log Out',
+            onPressed: () async {
+              await Supabase.instance.client.auth.signOut();
+              if (mounted) {
+                // Return to AuthScreen/LandingScreen cleanly
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (_) => const LandingScreen()),
+                  (route) => false,
+                );
+              }
+            },
+          )
+        ],
+      ),
+
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Form(

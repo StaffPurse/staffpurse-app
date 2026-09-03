@@ -104,7 +104,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             direction: EmbeddedTransactionDirection.outgoing,
             delta: 'debit',
             amount: majorAmount,
-            status: EmbeddedWalletTransactionStatus.success,
+            status: EmbeddedWalletTransactionStatus.completed,
             description: tx['description'] ?? 'Card Spend',
             title: staffName,
             createdAt: tx['occurred_at'],

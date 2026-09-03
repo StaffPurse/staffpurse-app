@@ -34,7 +34,7 @@ class StaffPurseApp extends StatelessWidget {
       title: 'StaffPurse',
       theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple)),
       darkTheme: ThemeData.dark(),
-      themeMode: ThemeMode.system,
+      themeMode: ThemeMode.dark,
       home: const InitialRouter(),
     );
   }

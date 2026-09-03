@@ -8,7 +8,7 @@ class LandingScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
@@ -18,13 +18,27 @@ class LandingScreen extends StatelessWidget {
               const Spacer(flex: 2),
               const Icon(Icons.wallet, size: 80, color: Color(0xFF7526C9)), // BMONI Accent
               const SizedBox(height: 24),
-              const Text(
-                'StaffPurse',
+              RichText(
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1A1420),
+                text: const TextSpan(
+                  children: [
+                    TextSpan(
+                      text: 'StaffPurse',
+                      style: TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    TextSpan(
+                      text: '.',
+                      style: TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.deepPurpleAccent,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 12),
@@ -33,7 +47,7 @@ class LandingScreen extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 16,
-                  color: Color(0xFF574F63),
+                  color: Colors.grey,
                 ),
               ),
               const Spacer(flex: 3),
@@ -58,12 +72,12 @@ class LandingScreen extends StatelessWidget {
                 },
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  side: const BorderSide(color: Color(0xFF7526C9)),
+                  side: const BorderSide(color: Colors.deepPurpleAccent),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
                 child: const Text(
                   'Log in to existing account',
-                  style: TextStyle(fontSize: 16, color: Color(0xFF7526C9), fontWeight: FontWeight.bold),
+                  style: TextStyle(fontSize: 16, color: Colors.deepPurpleAccent, fontWeight: FontWeight.bold),
                 ),
               ),
               const Spacer(),

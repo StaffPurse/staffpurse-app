@@ -17,15 +17,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final _formKey = GlobalKey<FormState>();
   final _onboardingService = OnboardingService();
 
-  final _businessNameCtrl = TextEditingController(text: "Acme Corp");
-  final _firstNameCtrl = TextEditingController(text: "Test");
-  final _lastNameCtrl = TextEditingController(text: "User");
-  final _emailCtrl = TextEditingController(text: "test.user@staffpurse.local");
-  final _phoneCtrl = TextEditingController(text: "+2348012345678");
-  final _dobCtrl = TextEditingController(text: "1990-01-01");
-  final _bvnCtrl = TextEditingController(text: "12345678901");
-  final _ninCtrl = TextEditingController(text: "12345678901");
-  final _pinCtrl = TextEditingController(text: "123456");
+  final _businessNameCtrl = TextEditingController();
+  final _firstNameCtrl = TextEditingController();
+  final _lastNameCtrl = TextEditingController();
+  final _emailCtrl = TextEditingController();
+  final _phoneCtrl = TextEditingController();
+  final _dobCtrl = TextEditingController();
+  final _bvnCtrl = TextEditingController();
+  final _ninCtrl = TextEditingController();
+  final _pinCtrl = TextEditingController();
 
   bool _isLoading = true;
 

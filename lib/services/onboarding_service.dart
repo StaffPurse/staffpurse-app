@@ -41,8 +41,15 @@ class OnboardingService {
       }
       await CrashLog.write('onboarding: pin set');
 
+      // Distinguish the Dart-side reads from the first NATIVE call
+      // (initWallet loads libBMONISignerJNI.so and touches the Keystore).
+      // If the process dies after this line with "found: false", the crash
+      // is inside the native signer, not in secure storage.
+      final hasLocalWallet = await BmoniEmbeddedSdk.hasWallet();
+      await CrashLog.write('onboarding: provisioning wallet (local wallet found: $hasLocalWallet)');
+
       String userOwnerAddress;
-      if (await BmoniEmbeddedSdk.hasWallet()) {
+      if (hasLocalWallet) {
         userOwnerAddress = (await BmoniEmbeddedSdk.walletAddress())!;
       } else {
         try {

@@ -19,11 +19,29 @@ class BmoniApi {
   }) async {
     final url = Uri.parse('${Env.bmoniBaseUrl}/users');
     
-    // As per the NGA KYC documentation
-    final payload = {
+    final createUserPayload = {
       "firstName": firstName,
       "lastName": lastName,
+      "email": "${firstName.toLowerCase()}.${lastName.toLowerCase()}@staffpurse.local",
       "phoneNumber": phoneNumber,
+    };
+
+    final userResponse = await http.post(
+      url,
+      headers: _headers,
+      body: jsonEncode(createUserPayload),
+    );
+
+    if (userResponse.statusCode < 200 || userResponse.statusCode >= 300) {
+      throw Exception('Failed to create BMONI user: ${userResponse.body}');
+    }
+
+    final userData = jsonDecode(userResponse.body);
+    final userId = userData['id'] as String;
+
+    // 2. Submit KYC data
+    final kycUrl = Uri.parse('${Env.bmoniBaseUrl}/users/$userId/kyc/activate');
+    final kycPayload = {
       "dateOfBirth": dateOfBirth,
       "address": {
         "streetLine1": "1 Hackathon Way",
@@ -37,18 +55,17 @@ class BmoniApi {
       }
     };
 
-    final response = await http.post(
-      url,
+    final kycResponse = await http.post(
+      kycUrl,
       headers: _headers,
-      body: jsonEncode(payload),
+      body: jsonEncode(kycPayload),
     );
 
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      final data = jsonDecode(response.body);
-      return data['id'] as String;
-    } else {
-      throw Exception('Failed to create BMONI user: ${response.body}');
+    if (kycResponse.statusCode < 200 || kycResponse.statusCode >= 300) {
+      throw Exception('Failed to activate KYC: ${kycResponse.body}');
     }
+
+    return userId;
   }
 
   /// Create a card and get the proposal ID and payload to sign.

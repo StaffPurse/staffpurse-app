@@ -1,3 +1,9 @@
+import 'dart:io';
+
+void main() {
+  var file = File('lib/screens/onboarding_screen.dart');
+  
+  var newCode = '''
 import 'package:flutter/material.dart';
 import 'package:bkey_uikit/bkey_uikit.dart';
 import '../services/onboarding_service.dart';
@@ -114,4 +120,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       ),
     );
   }
+}
+''';
+
+  file.writeAsStringSync(newCode);
 }

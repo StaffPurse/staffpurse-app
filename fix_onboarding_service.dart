@@ -1,7 +1,10 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:bmoni_embedded_sdk/bmoni_embedded_sdk.dart';
-import 'bmoni_api.dart';
+import 'dart:io';
 
+void main() {
+  var file = File('lib/services/onboarding_service.dart');
+  var content = file.readAsStringSync();
+  
+  var newMethod = '''
 class OnboardingService {
   final _supabase = Supabase.instance.client;
 
@@ -67,7 +70,16 @@ class OnboardingService {
       });
 
     } catch (e) {
-      throw Exception('Onboarding failed: $e');
+      throw Exception('Onboarding failed: \$e');
     }
   }
+}
+''';
+
+  content = content.replaceRange(
+    content.indexOf('class OnboardingService {'),
+    content.length,
+    newMethod
+  );
+  file.writeAsStringSync(content);
 }

@@ -1,3 +1,4 @@
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:bkey_uikit/bkey_uikit.dart';
 import '../services/onboarding_service.dart';
@@ -18,6 +19,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final _lastNameCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    // Prefill the email from Supabase Auth
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user != null && user.email != null) {
+      _emailCtrl.text = user.email!;
+    }
+  }
   final _bvnCtrl = TextEditingController();
   final _businessNameCtrl = TextEditingController();
   final _pinCtrl = TextEditingController();

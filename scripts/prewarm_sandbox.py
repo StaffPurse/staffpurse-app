@@ -12,7 +12,7 @@ import json
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
 BMONI_API_KEY = os.environ.get("BMONI_API_KEY")
-BMONI_BASE_URL = "https://api.sandbox.bmoni.com/v1"
+BMONI_BASE_URL = "https://embedded-dev.bmoni.com/v1"
 
 if not all([SUPABASE_URL, SUPABASE_KEY, BMONI_API_KEY]):
     print("Error: Missing environment variables. Please set SUPABASE_URL, SUPABASE_KEY, and BMONI_API_KEY.")

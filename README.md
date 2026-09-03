@@ -37,7 +37,7 @@ Create or update `lib/env.dart` with your Sandbox and Database keys:
 class Env {
   static const String supabaseUrl = 'https://YOUR_PROJECT.supabase.co';
   static const String supabaseAnonKey = 'eyJ...';
-  static const String bmoniBaseUrl = 'https://api.sandbox.bmoni.com/v1';
+  static const String bmoniBaseUrl = 'https://embedded-dev.bmoni.com/v1';
   static const String bmoniApiKey = 'pk_...'; 
 }
 ```

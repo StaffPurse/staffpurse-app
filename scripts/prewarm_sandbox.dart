@@ -22,7 +22,7 @@ void main() async {
   }
 
   final supabase = SupabaseClient(supabaseUrl, supabaseKey);
-  const bmoniBaseUrl = "https://api.sandbox.bmoni.com/v1";
+  const bmoniBaseUrl = "https://embedded-dev.bmoni.com/v1";
   final headers = {
     "Content-Type": "application/json",
     "x-api-key": bmoniApiKey,

@@ -30,7 +30,7 @@ jobs:
           class Env {
             static const String supabaseUrl = '${{ secrets.SUPABASE_URL }}';
             static const String supabaseAnonKey = '${{ secrets.SUPABASE_ANON_KEY }}';
-            static const String bmoniBaseUrl = 'https://api.sandbox.bmoni.com/v1';
+            static const String bmoniBaseUrl = 'https://embedded-dev.bmoni.com/v1';
             static const String bmoniApiKey = '${{ secrets.BMONI_API_KEY }}';
           }
           EOF

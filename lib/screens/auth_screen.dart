@@ -50,11 +50,18 @@ class _AuthScreenState extends State<AuthScreen> {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) return;
 
-    final res = await Supabase.instance.client
-        .from('business')
-        .select()
-        .eq('owner_id', user.id)
-        .maybeSingle();
+    Map<String, dynamic>? res;
+    try {
+      res = await Supabase.instance.client
+          .from('business')
+          .select()
+          .eq('owner_id', user.id)
+          .maybeSingle();
+    } catch (e) {
+      // DB unreachable — can't determine the user's state. Default to
+      // onboarding; its screens handle failures gracefully.
+      debugPrint('AuthScreen: route check failed: $e');
+    }
 
     if (!mounted) return;
 

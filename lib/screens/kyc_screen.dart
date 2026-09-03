@@ -76,7 +76,7 @@ class _KycScreenState extends State<KycScreen> {
         setState(() {
           final firstName = res['firstName'] ?? '';
           final lastName = res['lastName'] ?? '';
-          _bvnVerifiedName = "\$firstName \$lastName".trim();
+          _bvnVerifiedName = "$firstName $lastName".trim();
           if (_bvnVerifiedName!.isEmpty) _bvnVerifiedName = "Verified";
         });
       }

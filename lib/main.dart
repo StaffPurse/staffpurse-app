@@ -1,15 +1,32 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:bmoni_embedded_sdk/bmoni_embedded_sdk.dart';
 
 import 'env.dart';
+import 'services/crash_log.dart';
 import 'screens/landing_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/dashboard_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Capture any Dart-level error (widget builds, platform channel callbacks)
+  // into the on-device crash log so failures survive a force-close.
+  FlutterError.onError = (FlutterErrorDetails details) {
+    // dumpErrorToConsole preserves the framework's own console output without
+    // re-entering this handler.
+    FlutterError.dumpErrorToConsole(details);
+    CrashLog.write('DART ERROR: ${details.exception}\n${details.stack}');
+  };
+  PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
+    CrashLog.write('PLATFORM ERROR: $error\n$stack');
+    // Keep the demo alive and log the failure instead of force-closing.
+    return true;
+  };
 
   await Supabase.initialize(
     url: Env.supabaseUrl,
@@ -60,11 +77,20 @@ class _InitialRouterState extends State<InitialRouter> {
       return;
     }
 
-    final res = await Supabase.instance.client
-        .from('business')
-        .select()
-        .eq('owner_id', user.id)
-        .maybeSingle();
+    Map<String, dynamic>? res;
+    try {
+      res = await Supabase.instance.client
+          .from('business')
+          .select()
+          .eq('owner_id', user.id)
+          .maybeSingle();
+    } catch (e) {
+      // If the DB is unreachable we can't know the user's state. Default to
+      // onboarding — its screens handle failures gracefully and the demo
+      // path is a fresh signup anyway.
+      debugPrint('InitialRouter: route check failed: $e');
+      CrashLog.write('router: route check failed -> $e');
+    }
 
     if (!mounted) return;
 

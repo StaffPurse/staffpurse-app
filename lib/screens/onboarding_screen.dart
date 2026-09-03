@@ -107,20 +107,56 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 
               const Text('Personal Details', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 16),
-              BMoniTextFormField(controller: _firstNameCtrl, label: 'First Name'),
+              BMoniTextFormField(
+                controller: _firstNameCtrl,
+                label: 'First Name',
+                validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+              ),
               const SizedBox(height: 16),
-              BMoniTextFormField(controller: _lastNameCtrl, label: 'Last Name'),
+              BMoniTextFormField(
+                controller: _lastNameCtrl,
+                label: 'Last Name',
+                validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+              ),
               const SizedBox(height: 16),
-              BMoniTextFormField(controller: _emailCtrl, label: 'Email'),
+              BMoniTextFormField(
+                controller: _emailCtrl,
+                label: 'Email',
+                validator: (v) {
+                  if (v == null || v.trim().isEmpty) return 'Required';
+                  if (!v.contains('@')) return 'Enter a valid email';
+                  return null;
+                },
+              ),
               const SizedBox(height: 16),
-              BMoniTextFormField(controller: _phoneCtrl, label: 'Phone (+234...)'),
+              BMoniTextFormField(
+                controller: _phoneCtrl,
+                label: 'Phone (+234...)',
+                validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+              ),
               const SizedBox(height: 32),
               
               const Text('Business Details', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 16),
-              BMoniTextFormField(controller: _businessNameCtrl, label: 'Business Name'),
+              BMoniTextFormField(
+                controller: _businessNameCtrl,
+                label: 'Business Name',
+                validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+              ),
               const SizedBox(height: 16),
-              BMoniTextFormField(controller: _pinCtrl, label: 'Wallet PIN (6 digits)', obscureText: true),
+              BMoniTextFormField(
+                controller: _pinCtrl,
+                label: 'Wallet PIN (6 digits)',
+                obscureText: true,
+                keyboardType: TextInputType.number,
+                validator: (v) {
+                  if (v == null || v.trim().isEmpty) return 'Required';
+                  if (v.length != 6 || int.tryParse(v) == null) {
+                    return 'PIN must be exactly 6 digits';
+                  }
+                  return null;
+                },
+              ),
               const SizedBox(height: 32),
               
               _isLoading

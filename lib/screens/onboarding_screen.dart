@@ -1,182 +1,148 @@
 import 'package:flutter/material.dart';
-import 'package:bkey_uikit/bkey_uikit.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:bmoni_embedded_sdk/bmoni_embedded_sdk.dart';
-import '../services/onboarding_service.dart';
+import '../services/bmoni_api.dart';
 import 'dashboard_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
-  const OnboardingScreen({super.key});
-
+  const OnboardingScreen({Key? key}) : super(key: key);
   @override
-  State<OnboardingScreen> createState() => _OnboardingScreenState();
+  _OnboardingScreenState createState() => _OnboardingScreenState();
 }
 
 class _OnboardingScreenState extends State<OnboardingScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _onboardingService = OnboardingService();
-
-  final _businessNameCtrl = TextEditingController();
+  final _supabase = Supabase.instance.client;
+  
   final _firstNameCtrl = TextEditingController();
   final _lastNameCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
   final _dobCtrl = TextEditingController();
   final _bvnCtrl = TextEditingController();
-  final _ninCtrl = TextEditingController();
   final _pinCtrl = TextEditingController();
+  final _businessNameCtrl = TextEditingController();
 
-  bool _isLoading = true;
+  String _statusMessage = "Ready to start (Build V3)";
+  bool _isLoading = false;
+  
+  String? _bmoniUserId;
 
-  @override
-  void initState() {
-    super.initState();
-    _checkExistingBusiness();
-  }
-
-  Future<void> _checkExistingBusiness() async {
+  Future<void> _step1CreateUser() async {
+    setState(() { _isLoading = true; _statusMessage = "Step 1: Creating BMONI User..."; });
     try {
-      final user = Supabase.instance.client.auth.currentUser;
-      if (user == null) return;
+      final payload = {
+        "firstName": _firstNameCtrl.text,
+        "lastName": _lastNameCtrl.text,
+        "email": _emailCtrl.text,
+        "phoneNumber": _phoneCtrl.text,
+      };
+      setState(() => _statusMessage = "Sending payload: $payload");
       
-      final res = await Supabase.instance.client
-          .from('business')
-          .select()
-          .eq('owner_id', user.id)
-          .maybeSingle();
-
-      if (res != null && mounted) {
-        if (res['owner_wallet_id'] == 'PENDING_DEVICE_PROVISIONING') {
-          // Prewarmed but missing hardware wallet keys!
-          // We must stay on this screen to collect the PIN and run initWallet.
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Sandbox pre-warmed. Please enter a PIN and tap Onboard to initialize hardware keys.'),
-              duration: Duration(seconds: 4),
-            ),
-          );
-          if (mounted) setState(() => _isLoading = false);
-          return;
-        }
-
-        // Business already exists and wallet is provisioned
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const DashboardScreen()),
-        );
-      }
-    } catch (e) {
-      // ignore
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    setState(() => _isLoading = true);
-
-    try {
-      final user = Supabase.instance.client.auth.currentUser!;
-      final res = await Supabase.instance.client
-          .from('business')
-          .select()
-          .eq('owner_id', user.id)
-          .maybeSingle();
-      if (res != null && res['owner_wallet_id'] == 'PENDING_DEVICE_PROVISIONING') {
-        if (!await BmoniEmbeddedSdk.hasPin()) {
-          await BmoniEmbeddedSdk.setPin(_pinCtrl.text);
-        }
-        final walletAddress = await BmoniEmbeddedSdk.initWallet();
-        await Supabase.instance.client.from('business').update({
-          'owner_wallet_id': walletAddress
-        }).eq('id', res['id']);
-
-        const storage = FlutterSecureStorage();
-        await storage.write(key: 'owner_nin', value: '12345678901'); // Sandbox dummy NIN
-
-        if (mounted) {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const DashboardScreen()),
-          );
-        }
-        return;
-      }
-
-      await _onboardingService.onboardOwner(
-        businessName: _businessNameCtrl.text,
+      final userId = await BmoniApi.createUserOnly(
         firstName: _firstNameCtrl.text,
         lastName: _lastNameCtrl.text,
         email: _emailCtrl.text,
         phoneNumber: _phoneCtrl.text,
+      );
+      
+      setState(() {
+        _bmoniUserId = userId;
+        _statusMessage = "Success! User ID: $userId";
+      });
+    } catch (e) {
+      setState(() => _statusMessage = "Error in Step 1: $e");
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _step2ActivateKyc() async {
+    if (_bmoniUserId == null) return;
+    setState(() { _isLoading = true; _statusMessage = "Step 2: Activating KYC..."; });
+    try {
+      await BmoniApi.activateKycOnly(
+        userId: _bmoniUserId!,
         dateOfBirth: _dobCtrl.text,
         bvn: _bvnCtrl.text,
-        pin: _pinCtrl.text,
       );
+      setState(() => _statusMessage = "KYC Activated Successfully!");
+    } catch (e) {
+      setState(() => _statusMessage = "Error in Step 2: $e");
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
 
-      // Store NIN locally to be used when issuing the first card
-      const storage = FlutterSecureStorage();
-      await storage.write(key: 'owner_nin', value: _ninCtrl.text);
+  Future<void> _step3SetupWallet() async {
+    if (_bmoniUserId == null) return;
+    setState(() { _isLoading = true; _statusMessage = "Step 3: Setting up Smart Wallet..."; });
+    try {
+      if (!await BmoniEmbeddedSdk.hasPin()) {
+        await BmoniEmbeddedSdk.setPin(_pinCtrl.text);
+      }
+      String walletAddress;
+      if (await BmoniEmbeddedSdk.hasWallet()) {
+        walletAddress = (await BmoniEmbeddedSdk.walletAddress())!;
+      } else {
+        walletAddress = await BmoniEmbeddedSdk.initWallet();
+      }
+      
+      final userId = _supabase.auth.currentUser!.id;
+      await _supabase.from('business').insert({
+        'owner_id': userId,
+        'owner_bmoni_user_id': _bmoniUserId,
+        'owner_wallet_id': walletAddress,
+        'name': _businessNameCtrl.text,
+      });
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Onboarding successful!')),
-        );
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const DashboardScreen()),
         );
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
-        );
-      }
+      setState(() => _statusMessage = "Error in Step 3: $e");
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Setup StaffPurse')),
+      appBar: AppBar(title: const Text('Setup StaffPurse (Debug)')),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              BMoniTextFormField(controller: _businessNameCtrl, label: 'Business Name'),
-              const SizedBox(height: 16),
-              BMoniTextFormField(controller: _firstNameCtrl, label: 'First Name'),
-              const SizedBox(height: 16),
-              BMoniTextFormField(controller: _lastNameCtrl, label: 'Last Name'),
-              const SizedBox(height: 16),
-              BMoniTextFormField(controller: _emailCtrl, label: 'Email Address'),
-              const SizedBox(height: 16),
-              BMoniTextFormField(controller: _phoneCtrl, label: 'Phone Number (incl. +234)'),
-              const SizedBox(height: 16),
-              BMoniTextFormField(controller: _dobCtrl, label: 'Date of Birth (YYYY-MM-DD)'),
-              const SizedBox(height: 16),
-              BMoniTextFormField(controller: _bvnCtrl, label: 'BVN (11 digits)'),
-              const SizedBox(height: 16),
-              BMoniTextFormField(controller: _ninCtrl, label: 'NIN (11 digits)'),
-              const SizedBox(height: 16),
-              BMoniTextFormField(controller: _pinCtrl, label: '6-Digit Wallet PIN', obscureText: true),
-              const SizedBox(height: 32),
-              BMoniButton(
-                onPressed: _submit,
-                text: 'Complete Setup',
-                isLoading: _isLoading,
-              ),
-            ],
-          ),
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              color: Colors.yellow.shade100,
+              child: Text(_statusMessage, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
+            ),
+            const SizedBox(height: 16),
+            TextField(controller: _businessNameCtrl, decoration: const InputDecoration(labelText: 'Business Name')),
+            TextField(controller: _firstNameCtrl, decoration: const InputDecoration(labelText: 'First Name')),
+            TextField(controller: _lastNameCtrl, decoration: const InputDecoration(labelText: 'Last Name')),
+            TextField(controller: _emailCtrl, decoration: const InputDecoration(labelText: 'Email')),
+            TextField(controller: _phoneCtrl, decoration: const InputDecoration(labelText: 'Phone')),
+            TextField(controller: _dobCtrl, decoration: const InputDecoration(labelText: 'Date of Birth (YYYY-MM-DD)')),
+            TextField(controller: _bvnCtrl, decoration: const InputDecoration(labelText: 'BVN (Use 22222222222 for test)')),
+            TextField(controller: _pinCtrl, decoration: const InputDecoration(labelText: '6-digit PIN')),
+            
+            const SizedBox(height: 24),
+            if (_isLoading) const CircularProgressIndicator()
+            else Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                ElevatedButton(onPressed: _step1CreateUser, child: const Text('1. Create BMONI User')),
+                ElevatedButton(onPressed: _bmoniUserId != null ? _step2ActivateKyc : null, child: const Text('2. Activate KYC')),
+                ElevatedButton(onPressed: _bmoniUserId != null ? _step3SetupWallet : null, child: const Text('3. Setup Wallet & Finish')),
+              ],
+            )
+          ],
         ),
       ),
     );
   }
 }
-

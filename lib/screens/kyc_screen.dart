@@ -118,7 +118,7 @@ class _KycScreenState extends State<KycScreen> {
       
       // 2. Save actual NIN for sandbox testing / first card issuance
       const storage = FlutterSecureStorage();
-      await storage.write(key: 'owner_nin', _ninCtrl.text.trim());
+      await storage.write(key: 'owner_nin', value: _ninCtrl.text.trim());
 
       // 3. Drop into dashboard where async provisioning UI will handle the wait
       if (mounted) {

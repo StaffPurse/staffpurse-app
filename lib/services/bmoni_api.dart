@@ -8,10 +8,13 @@ class BmoniApi {
     'x-api-key': Env.bmoniApiKey,
   };
 
-  /// Safely unwraps nested 'data' objects if the BMONI API returns them.
+  /// Safely unwraps nested objects if the BMONI API returns them.
   static dynamic _unwrapData(dynamic responseBody) {
-    if (responseBody is Map<String, dynamic> && responseBody.containsKey('data')) {
-      return responseBody['data'];
+    if (responseBody is Map<String, dynamic>) {
+      if (responseBody.containsKey('data')) return responseBody['data'];
+      if (responseBody.containsKey('user')) return responseBody['user'];
+      if (responseBody.containsKey('card')) return responseBody['card'];
+      if (responseBody.containsKey('proposal')) return responseBody['proposal'];
     }
     return responseBody;
   }
@@ -45,8 +48,8 @@ class BmoniApi {
       throw Exception('Failed to create BMONI user: ${userResponse.body}');
     }
 
-    final userData = jsonDecode(userResponse.body);
-    final userId = (userData['id'] ?? userData['bmoniUserId'] ?? userData['userId'] ?? userData['data']?['id'] ?? userData['data']?['bmoniUserId']).toString();
+    final userData = _unwrapData(jsonDecode(userResponse.body));
+    final userId = (userData['bmoniUserId'] ?? userData['userId'] ?? userData['id']).toString();
     if (userId == 'null' || userId.isEmpty) {
       throw Exception('Could not extract user ID from response: $userData');
     }

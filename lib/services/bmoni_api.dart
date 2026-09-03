@@ -21,7 +21,7 @@ class BmoniApi {
 
   /// Creates a user in BMONI and initiates the NGN onboarding/KYC flow.
   /// Returns the newly created user ID.
-  static Future<String> createUserOnly({
+    static Future<String> createUserOnly({
     required String firstName,
     required String lastName,
     required String email,
@@ -56,39 +56,9 @@ class BmoniApi {
 
   static Future<void> activateKycOnly({
     required String userId,
-    required String firstName,
-    required String lastName,
-    required String email,
-    required String phoneNumber,
     required String dateOfBirth,
     required String bvn,
   }) async {
-    final url = Uri.parse('${Env.bmoniBaseUrl}/users');
-    
-    final createUserPayload = {
-      "firstName": firstName,
-      "lastName": lastName,
-      "email": email,
-      "phoneNumber": phoneNumber,
-    };
-
-    final userResponse = await http.post(
-      url,
-      headers: _headers,
-      body: jsonEncode(createUserPayload),
-    );
-
-    if (userResponse.statusCode < 200 || userResponse.statusCode >= 300) {
-      throw Exception('Failed to create BMONI user: ${userResponse.body}');
-    }
-
-    final userData = _unwrapData(jsonDecode(userResponse.body));
-    final userId = (userData['bmoniUserId'] ?? userData['userId'] ?? userData['id']).toString();
-    if (userId == 'null' || userId.isEmpty) {
-      throw Exception('Could not extract user ID from response: $userData');
-    }
-
-    // 2. Submit KYC data
     final kycUrl = Uri.parse('${Env.bmoniBaseUrl}/users/$userId/kyc/activate');
     final kycPayload = {
       "dateOfBirth": dateOfBirth,
@@ -113,8 +83,7 @@ class BmoniApi {
     if (kycResponse.statusCode < 200 || kycResponse.statusCode >= 300) {
       throw Exception('Failed to activate KYC: ${kycResponse.body}');
     }
-
-    }
+  }
 
   /// Create a card and get the proposal ID and payload to sign.
   static Future<Map<String, dynamic>> createCard({

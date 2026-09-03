@@ -16,12 +16,17 @@ class OnboardingService {
     required String pin,
   }) async {
     try {
-      // 1. Create User in BMONI (KYC happens automatically with BVN for NGN)
-      final bmoniUserId = await BmoniApi.createUserAndKyc(
+      // 1. Create User in BMONI
+      final bmoniUserId = await BmoniApi.createUserOnly(
         firstName: firstName,
         lastName: lastName,
         email: email,
         phoneNumber: phoneNumber,
+      );
+
+      // 1.5 Activate KYC
+      await BmoniApi.activateKycOnly(
+        userId: bmoniUserId,
         dateOfBirth: dateOfBirth,
         bvn: bvn,
       );

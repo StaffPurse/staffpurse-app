@@ -1,13 +1,17 @@
-package com.example.staffpurse_app
+import 'dart:io';
 
-import io.flutter.embedding.android.FlutterFragmentActivity
+void main() {
+  var file = File('android/app/src/main/kotlin/com/example/staffpurse_app/MainActivity.kt');
+  var content = file.readAsStringSync();
+  
+  var newImports = '''
 import android.os.Bundle
 import android.content.Context
 import java.security.KeyStore
 import java.io.File
+''';
 
-
-class MainActivity : FlutterFragmentActivity() {
+  var onCreateMethod = '''
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
@@ -46,5 +50,15 @@ class MainActivity : FlutterFragmentActivity() {
             }
         }
     }
+''';
 
+  if (!content.contains("import android.os.Bundle")) {
+    content = content.replaceFirst("import io.flutter.embedding.android.FlutterFragmentActivity", "import io.flutter.embedding.android.FlutterFragmentActivity\n" + newImports);
+  }
+  
+  if (!content.contains("override fun onCreate")) {
+    content = content.replaceFirst("class MainActivity : FlutterFragmentActivity()", "class MainActivity : FlutterFragmentActivity() {\n" + onCreateMethod + "\n}");
+  }
+  
+  file.writeAsStringSync(content);
 }

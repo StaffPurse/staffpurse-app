@@ -1,3 +1,10 @@
+import 'dart:io';
+
+void main() {
+  var file = File('lib/screens/onboarding_screen.dart');
+  var content = file.readAsStringSync();
+  
+  var newClass = '''
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:bkey_uikit/bkey_uikit.dart';
@@ -85,7 +92,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         setState(() {
           final firstName = res['firstName'] ?? '';
           final lastName = res['lastName'] ?? '';
-          _bvnVerifiedName = "$firstName $lastName".trim();
+          _bvnVerifiedName = "\$firstName \$lastName".trim();
           if (_bvnVerifiedName!.isEmpty) _bvnVerifiedName = "Verified";
         });
       }
@@ -200,7 +207,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         children: [
                           const Icon(Icons.check_circle, color: Colors.green, size: 16),
                           const SizedBox(width: 4),
-                          Text('Verified: $_bvnVerifiedName', style: const TextStyle(color: Colors.green, fontSize: 12, fontWeight: FontWeight.bold)),
+                          Text('Verified: \$_bvnVerifiedName', style: const TextStyle(color: Colors.green, fontSize: 12, fontWeight: FontWeight.bold)),
                         ],
                       ),
                     )
@@ -241,4 +248,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       ),
     );
   }
+}
+''';
+
+  file.writeAsStringSync(newClass);
 }

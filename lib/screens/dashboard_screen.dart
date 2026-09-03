@@ -27,6 +27,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   List<dynamic> _staffCards = [];
   List<EmbeddedWalletTransaction> _transactions = [];
   bool _isLoading = true;
+  bool _isProvisioning = false;
 
   @override
   void initState() {
@@ -34,7 +35,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _fetchData();
   }
 
+    Future<void> _pollProvisioning(String userId) async {
+    while (_isProvisioning && mounted) {
+      await Future.delayed(const Duration(seconds: 3));
+      if (!mounted) return;
+      try {
+        final status = await BmoniApi.getOnboardingStatus(userId: userId);
+        if (status['status']?['hasLocalWallet'] == true) {
+          setState(() {
+            _isProvisioning = false;
+          });
+          break;
+        }
+      } catch (e) {
+        // keep polling
+      }
+    }
+  }
+
   Future<void> _fetchData() async {
+
     try {
       final businessRes = await _supabase.from('business')
           .select()
@@ -50,7 +70,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
         final ownerUserId = businessRes['owner_bmoni_user_id'];
         final walletId = businessRes['owner_wallet_id'];
 
-        // 3a. ORPHAN RECONCILIATION: Sync any rogue cards from BMONI directly
+                // 3. Check if wallet is still provisioning
+        try {
+          final status = await BmoniApi.getOnboardingStatus(userId: ownerUserId);
+          if (status['status']?['hasLocalWallet'] != true) {
+            _isProvisioning = true;
+            _pollProvisioning(ownerUserId);
+          } else {
+            _isProvisioning = false;
+          }
+        } catch (e) {
+          // ignore
+        }
+        
+        // 3a. ORPHAN RECONCILIATION
+: Sync any rogue cards from BMONI directly
         try {
           final liveCardsUrl = Uri.parse('${Env.bmoniBaseUrl}/users/$ownerUserId/smart-wallets/$walletId/cards');
           final liveCardsRes = await http.get(liveCardsUrl, headers: {
@@ -265,8 +299,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     subtitle: Text(hasCard ? 'Card: ${card['status'].toString().toUpperCase()}' : 'No card issued'),
                     trailing: hasCard 
                       ? const Icon(Icons.settings)
-                      : const Icon(Icons.add_card),
+                      : (_isProvisioning && !hasCard) ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.add_card),
                     onTap: () {
+                      if (_isProvisioning && !hasCard) return;
                       if (hasCard) {
                         Navigator.push(context, MaterialPageRoute(
                           builder: (_) => CardManagementScreen(

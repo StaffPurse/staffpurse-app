@@ -3,6 +3,17 @@ import 'package:http/http.dart' as http;
 import '../env.dart';
 
 class BmoniApi {
+  static Future<Map<String, dynamic>> bvnLookup({
+    required String bvn,
+  }) async {
+    final url = Uri.parse('${Env.bmoniBaseUrl}/kyc/bvn-lookup/$bvn');
+    final response = await http.get(url, headers: _headers);
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('BVN lookup failed: ${response.body}');
+    }
+    return jsonDecode(response.body);
+  }
+
   static final Map<String, String> _headers = {
     'Content-Type': 'application/json',
     'x-api-key': Env.bmoniApiKey,

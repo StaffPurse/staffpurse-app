@@ -13,6 +13,7 @@ class BmoniApi {
   static Future<String> createUserAndKyc({
     required String firstName,
     required String lastName,
+    required String email,
     required String phoneNumber,
     required String dateOfBirth,
     required String bvn,
@@ -22,7 +23,7 @@ class BmoniApi {
     final createUserPayload = {
       "firstName": firstName,
       "lastName": lastName,
-      "email": "${firstName.toLowerCase()}.${lastName.toLowerCase()}@staffpurse.local",
+      "email": email,
       "phoneNumber": phoneNumber,
     };
 
@@ -37,7 +38,10 @@ class BmoniApi {
     }
 
     final userData = jsonDecode(userResponse.body);
-    final userId = userData['id'] as String;
+    final userId = (userData['id'] ?? userData['bmoniUserId'] ?? userData['userId'] ?? userData['data']?['id'] ?? userData['data']?['bmoniUserId']).toString();
+    if (userId == 'null' || userId.isEmpty) {
+      throw Exception('Could not extract user ID from response: $userData');
+    }
 
     // 2. Submit KYC data
     final kycUrl = Uri.parse('${Env.bmoniBaseUrl}/users/$userId/kyc/activate');

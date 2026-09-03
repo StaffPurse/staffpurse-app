@@ -1,0 +1,495 @@
+diff --git a/auth_patch.diff b/auth_patch.diff
+new file mode 100644
+index 0000000..7d05dd1
+--- /dev/null
++++ b/auth_patch.diff
+@@ -0,0 +1,370 @@
++diff --git a/.metadata b/.metadata
++new file mode 100644
++index 0000000..986c516
++--- /dev/null
+++++ b/.metadata
++@@ -0,0 +1,33 @@
+++# This file tracks properties of this Flutter project.
+++# Used by Flutter tool to assess capabilities and perform upgrades etc.
+++#
+++# This file should be version controlled and should not be manually edited.
+++
+++version:
+++  revision: "d3b14c876900e553bc736ca19295fc09e3853e8e"
+++  channel: "stable"
+++
+++project_type: app
+++
+++# Tracks metadata for the flutter migrate command
+++migration:
+++  platforms:
+++    - platform: root
+++      create_revision: d3b14c876900e553bc736ca19295fc09e3853e8e
+++      base_revision: d3b14c876900e553bc736ca19295fc09e3853e8e
+++    - platform: android
+++      create_revision: d3b14c876900e553bc736ca19295fc09e3853e8e
+++      base_revision: d3b14c876900e553bc736ca19295fc09e3853e8e
+++    - platform: ios
+++      create_revision: d3b14c876900e553bc736ca19295fc09e3853e8e
+++      base_revision: d3b14c876900e553bc736ca19295fc09e3853e8e
+++
+++  # User provided section
+++
+++  # List of Local paths (relative to this file) that should be
+++  # ignored by the migrate tool.
+++  #
+++  # Files that are not part of the templates will be ignored by default.
+++  unmanaged_files:
+++    - 'lib/main.dart'
+++    - 'ios/Runner.xcodeproj/project.pbxproj'
++diff --git a/error.jpeg b/error.jpeg
++new file mode 100644
++index 0000000..f53ed37
++Binary files /dev/null and b/error.jpeg differ
++diff --git a/lib/main.dart b/lib/main.dart
++index 9541413..ce85949 100644
++--- a/lib/main.dart
+++++ b/lib/main.dart
++@@ -2,21 +2,20 @@ import 'package:flutter/material.dart';
++ import 'package:flutter_riverpod/flutter_riverpod.dart';
++ import 'package:supabase_flutter/supabase_flutter.dart';
++ import 'package:bmoni_embedded_sdk/bmoni_embedded_sdk.dart';
++-import 'package:bkey_uikit/bkey_uikit.dart';
++ 
++ import 'env.dart';
+++import 'screens/auth_screen.dart';
++ import 'screens/onboarding_screen.dart';
+++import 'screens/dashboard_screen.dart';
++ 
++ void main() async {
++   WidgetsFlutterBinding.ensureInitialized();
++ 
++-  // Initialize Supabase
++   await Supabase.initialize(
++     url: Env.supabaseUrl,
++     anonKey: Env.supabaseAnonKey,
++   );
++ 
++-  // Initialize BMONI Embedded SDK (using defaults per QUICKSTART)
++   BmoniEmbeddedSdk.initialize(pinLength: 6, requirePin: true);
++ 
++   runApp(
++@@ -36,8 +35,48 @@ class StaffPurseApp extends StatelessWidget {
++       theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple)),
++       darkTheme: ThemeData.dark(),
++       themeMode: ThemeMode.system,
++-      home: const OnboardingScreen(),
+++      home: const InitialRouter(),
++     );
++   }
++ }
++ 
+++class InitialRouter extends StatefulWidget {
+++  const InitialRouter({super.key});
+++  @override
+++  State<InitialRouter> createState() => _InitialRouterState();
+++}
+++
+++class _InitialRouterState extends State<InitialRouter> {
+++  @override
+++  void initState() {
+++    super.initState();
+++    _checkRoute();
+++  }
+++
+++  Future<void> _checkRoute() async {
+++    final user = Supabase.instance.client.auth.currentUser;
+++    if (user == null) {
+++      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const AuthScreen()));
+++      return;
+++    }
+++
+++    final res = await Supabase.instance.client
+++        .from('business')
+++        .select()
+++        .eq('owner_id', user.id)
+++        .maybeSingle();
+++
+++    if (!mounted) return;
+++
+++    if (res != null && res['owner_wallet_id'] != 'PENDING_DEVICE_PROVISIONING') {
+++      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const DashboardScreen()));
+++    } else {
+++      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const OnboardingScreen()));
+++    }
+++  }
+++
+++  @override
+++  Widget build(BuildContext context) {
+++    return const Scaffold(body: Center(child: CircularProgressIndicator()));
+++  }
+++}
++diff --git a/lib/screens/auth_screen.dart b/lib/screens/auth_screen.dart
++new file mode 100644
++index 0000000..7bbbb65
++--- /dev/null
+++++ b/lib/screens/auth_screen.dart
++@@ -0,0 +1,89 @@
+++import 'package:flutter/material.dart';
+++import 'package:bkey_uikit/bkey_uikit.dart';
+++import 'package:supabase_flutter/supabase_flutter.dart';
+++import 'onboarding_screen.dart';
+++import 'dashboard_screen.dart';
+++
+++class AuthScreen extends StatefulWidget {
+++  const AuthScreen({super.key});
+++
+++  @override
+++  State<AuthScreen> createState() => _AuthScreenState();
+++}
+++
+++class _AuthScreenState extends State<AuthScreen> {
+++  final _emailCtrl = TextEditingController();
+++  final _passwordCtrl = TextEditingController();
+++  bool _isLoading = false;
+++  bool _isLogin = true;
+++
+++  Future<void> _submit() async {
+++    final email = _emailCtrl.text.trim();
+++    final password = _passwordCtrl.text;
+++    if (email.isEmpty || password.isEmpty) return;
+++
+++    setState(() => _isLoading = true);
+++    try {
+++      if (_isLogin) {
+++        await Supabase.instance.client.auth.signInWithPassword(email: email, password: password);
+++      } else {
+++        await Supabase.instance.client.auth.signUp(email: email, password: password);
+++      }
+++      _checkRoute();
+++    } catch (e) {
+++      if (mounted) {
+++        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString()), backgroundColor: Colors.red));
+++      }
+++    } finally {
+++      if (mounted) setState(() => _isLoading = false);
+++    }
+++  }
+++
+++  Future<void> _checkRoute() async {
+++    final user = Supabase.instance.client.auth.currentUser;
+++    if (user == null) return;
+++
+++    final res = await Supabase.instance.client
+++        .from('business')
+++        .select()
+++        .eq('owner_id', user.id)
+++        .maybeSingle();
+++
+++    if (!mounted) return;
+++
+++    if (res != null && res['owner_wallet_id'] != 'PENDING_DEVICE_PROVISIONING') {
+++      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const DashboardScreen()));
+++    } else {
+++      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const OnboardingScreen()));
+++    }
+++  }
+++
+++  @override
+++  Widget build(BuildContext context) {
+++    return Scaffold(
+++      appBar: AppBar(title: Text(_isLogin ? 'Login to StaffPurse' : 'Create Account')),
+++      body: Padding(
+++        padding: const EdgeInsets.all(16),
+++        child: Column(
+++          mainAxisAlignment: MainAxisAlignment.center,
+++          crossAxisAlignment: CrossAxisAlignment.stretch,
+++          children: [
+++            BMoniTextFormField(controller: _emailCtrl, label: 'Email'),
+++            const SizedBox(height: 16),
+++            BMoniTextFormField(controller: _passwordCtrl, label: 'Password', obscureText: true),
+++            const SizedBox(height: 32),
+++            BMoniButton(
+++              onPressed: _submit,
+++              text: _isLogin ? 'Login' : 'Sign Up',
+++              isLoading: _isLoading,
+++            ),
+++            TextButton(
+++              onPressed: () => setState(() => _isLogin = !_isLogin),
+++              child: Text(_isLogin ? 'Need an account? Sign up' : 'Already have an account? Login'),
+++            )
+++          ],
+++        ),
+++      ),
+++    );
+++  }
+++}
++diff --git a/lib/screens/dashboard_screen.dart b/lib/screens/dashboard_screen.dart
++index d0483c4..0495a5e 100644
++--- a/lib/screens/dashboard_screen.dart
+++++ b/lib/screens/dashboard_screen.dart
++@@ -9,6 +9,7 @@ import '../env.dart';
++ 
++ import 'card_issuance_screen.dart';
++ import 'card_management_screen.dart';
+++import 'auth_screen.dart';
++ import '../services/card_service.dart';
++ 
++ class DashboardScreen extends StatefulWidget {
++@@ -205,6 +206,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
++               setState(() => _isLoading = true);
++               _fetchData();
++             },
+++          ),
+++          IconButton(
+++            icon: const Icon(Icons.logout),
+++            onPressed: () async {
+++              await Supabase.instance.client.auth.signOut();
+++              if (mounted) {
+++                Navigator.of(context).pushReplacement(
+++                  MaterialPageRoute(builder: (_) => const AuthScreen()),
+++                );
+++              }
+++            },
++           )
++         ],
++       ),
++diff --git a/lib/screens/onboarding_screen.dart b/lib/screens/onboarding_screen.dart
++index 13710eb..45fb243 100644
++--- a/lib/screens/onboarding_screen.dart
+++++ b/lib/screens/onboarding_screen.dart
++@@ -20,6 +20,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
++   final _businessNameCtrl = TextEditingController(text: "Acme Corp");
++   final _firstNameCtrl = TextEditingController(text: "Test");
++   final _lastNameCtrl = TextEditingController(text: "User");
+++  final _emailCtrl = TextEditingController(text: "test.user@staffpurse.local");
++   final _phoneCtrl = TextEditingController(text: "+2348012345678");
++   final _dobCtrl = TextEditingController(text: "1990-01-01");
++   final _bvnCtrl = TextEditingController(text: "12345678901");
++@@ -36,7 +37,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
++ 
++   Future<void> _checkExistingBusiness() async {
++     try {
++-      final res = await Supabase.instance.client.from('business').select().limit(1).maybeSingle();
+++      final user = Supabase.instance.client.auth.currentUser;
+++      if (user == null) return;
+++      
+++      final res = await Supabase.instance.client
+++          .from('business')
+++          .select()
+++          .eq('owner_id', user.id)
+++          .maybeSingle();
+++
++       if (res != null && mounted) {
++         if (res['owner_wallet_id'] == 'PENDING_DEVICE_PROVISIONING') {
++           // Prewarmed but missing hardware wallet keys!
++@@ -69,8 +78,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
++     setState(() => _isLoading = true);
++ 
++     try {
++-      // Check if we are just completing a prewarm
++-      final res = await Supabase.instance.client.from('business').select().limit(1).maybeSingle();
+++      final user = Supabase.instance.client.auth.currentUser!;
+++      final res = await Supabase.instance.client
+++          .from('business')
+++          .select()
+++          .eq('owner_id', user.id)
+++          .maybeSingle();
++       if (res != null && res['owner_wallet_id'] == 'PENDING_DEVICE_PROVISIONING') {
++         if (!await BmoniEmbeddedSdk.hasPin()) {
++           await BmoniEmbeddedSdk.setPin(_pinCtrl.text);
++@@ -95,6 +108,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
++         businessName: _businessNameCtrl.text,
++         firstName: _firstNameCtrl.text,
++         lastName: _lastNameCtrl.text,
+++        email: _emailCtrl.text,
++         phoneNumber: _phoneCtrl.text,
++         dateOfBirth: _dobCtrl.text,
++         bvn: _bvnCtrl.text,
++@@ -141,6 +155,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
++               const SizedBox(height: 16),
++               BMoniTextFormField(controller: _lastNameCtrl, label: 'Last Name'),
++               const SizedBox(height: 16),
+++              BMoniTextFormField(controller: _emailCtrl, label: 'Email Address'),
+++              const SizedBox(height: 16),
++               BMoniTextFormField(controller: _phoneCtrl, label: 'Phone Number (incl. +234)'),
++               const SizedBox(height: 16),
++               BMoniTextFormField(controller: _dobCtrl, label: 'Date of Birth (YYYY-MM-DD)'),
++diff --git a/lib/services/bmoni_api.dart b/lib/services/bmoni_api.dart
++index bf69f58..f69952a 100644
++--- a/lib/services/bmoni_api.dart
+++++ b/lib/services/bmoni_api.dart
++@@ -13,6 +13,7 @@ class BmoniApi {
++   static Future<String> createUserAndKyc({
++     required String firstName,
++     required String lastName,
+++    required String email,
++     required String phoneNumber,
++     required String dateOfBirth,
++     required String bvn,
++@@ -22,7 +23,7 @@ class BmoniApi {
++     final createUserPayload = {
++       "firstName": firstName,
++       "lastName": lastName,
++-      "email": "${firstName.toLowerCase()}.${lastName.toLowerCase()}@staffpurse.local",
+++      "email": email,
++       "phoneNumber": phoneNumber,
++     };
++ 
++@@ -37,7 +38,10 @@ class BmoniApi {
++     }
++ 
++     final userData = jsonDecode(userResponse.body);
++-    final userId = userData['id'] as String;
+++    final userId = (userData['id'] ?? userData['bmoniUserId'] ?? userData['userId'] ?? userData['data']?['id'] ?? userData['data']?['bmoniUserId']).toString();
+++    if (userId == 'null' || userId.isEmpty) {
+++      throw Exception('Could not extract user ID from response: $userData');
+++    }
++ 
++     // 2. Submit KYC data
++     final kycUrl = Uri.parse('${Env.bmoniBaseUrl}/users/$userId/kyc/activate');
++diff --git a/lib/services/onboarding_service.dart b/lib/services/onboarding_service.dart
++index 2a8bf63..ccb32d6 100644
++--- a/lib/services/onboarding_service.dart
+++++ b/lib/services/onboarding_service.dart
++@@ -8,6 +8,7 @@ class OnboardingService {
++   Future<void> onboardOwner({
++     required String firstName,
++     required String lastName,
+++    required String email,
++     required String phoneNumber,
++     required String dateOfBirth,
++     required String bvn,
++@@ -19,6 +20,7 @@ class OnboardingService {
++       final bmoniUserId = await BmoniApi.createUserAndKyc(
++         firstName: firstName,
++         lastName: lastName,
+++        email: email,
++         phoneNumber: phoneNumber,
++         dateOfBirth: dateOfBirth,
++         bvn: bvn,
++@@ -37,7 +39,9 @@ class OnboardingService {
++       }
++ 
++       // 3. Save Business mapping to Supabase
+++      final userId = _supabase.auth.currentUser!.id;
++       await _supabase.from('business').insert({
+++        'owner_id': userId,
++         'owner_bmoni_user_id': bmoniUserId,
++         'owner_wallet_id': walletAddress, // Or the actual Smart Wallet UUID if different
++         'name': businessName,
+diff --git a/lib/services/bmoni_api.dart b/lib/services/bmoni_api.dart
+index f69952a..43ba06f 100644
+--- a/lib/services/bmoni_api.dart
++++ b/lib/services/bmoni_api.dart
+@@ -8,6 +8,14 @@ class BmoniApi {
+     'x-api-key': Env.bmoniApiKey,
+   };
+ 
++  /// Safely unwraps nested 'data' objects if the BMONI API returns them.
++  static dynamic _unwrapData(dynamic responseBody) {
++    if (responseBody is Map<String, dynamic> && responseBody.containsKey('data')) {
++      return responseBody['data'];
++    }
++    return responseBody;
++  }
++
+   /// Creates a user in BMONI and initiates the NGN onboarding/KYC flow.
+   /// Returns the newly created user ID.
+   static Future<String> createUserAndKyc({
+@@ -94,7 +102,7 @@ class BmoniApi {
+     );
+ 
+     if (response.statusCode >= 200 && response.statusCode < 300) {
+-      return jsonDecode(response.body);
++      return _unwrapData(jsonDecode(response.body));
+     } else {
+       throw Exception('Failed to create card: ${response.body}');
+     }
+@@ -112,7 +120,7 @@ class BmoniApi {
+       final response = await http.get(url, headers: _headers);
+       
+       if (response.statusCode == 200) {
+-        final data = jsonDecode(response.body);
++        final data = _unwrapData(jsonDecode(response.body));
+         return data['signPayload'] as String;
+       } else if (response.statusCode == 409) {
+         // 409 means "not ready, keep polling"
+@@ -139,7 +147,7 @@ class BmoniApi {
+     );
+ 
+     if (response.statusCode >= 200 && response.statusCode < 300) {
+-      return jsonDecode(response.body);
++      return _unwrapData(jsonDecode(response.body));
+     } else {
+       throw Exception('Failed to submit signature: ${response.body}');
+     }
+@@ -157,7 +165,7 @@ class BmoniApi {
+     );
+ 
+     if (response.statusCode >= 200 && response.statusCode < 300) {
+-      return jsonDecode(response.body);
++      return _unwrapData(jsonDecode(response.body));
+     } else {
+       throw Exception('Failed to get limits: ${response.body}');
+     }
+@@ -194,7 +202,7 @@ class BmoniApi {
+     final response = await http.get(url, headers: _headers);
+ 
+     if (response.statusCode >= 200 && response.statusCode < 300) {
+-      return jsonDecode(response.body);
++      return _unwrapData(jsonDecode(response.body));
+     } else {
+       throw Exception('Failed to get card: ${response.body}');
+     }
+@@ -227,7 +235,7 @@ class BmoniApi {
+     final response = await http.get(url, headers: _headers);
+ 
+     if (response.statusCode >= 200 && response.statusCode < 300) {
+-      final data = jsonDecode(response.body);
++      final data = _unwrapData(jsonDecode(response.body));
+       if (data is List) return data;
+       if (data['data'] is List) return data['data'];
+       return [data]; 
+diff --git a/lib/services/card_service.dart b/lib/services/card_service.dart
+index e13addc..5a37f69 100644
+--- a/lib/services/card_service.dart
++++ b/lib/services/card_service.dart
+@@ -32,7 +32,11 @@ class CardService {
+         nin: nin,
+       );
+ 
+-      final proposalId = createResponse['proposalId'];
++      final proposalId = (createResponse['proposalId'] ?? createResponse['id']).toString();
++      if (proposalId == 'null' || proposalId.isEmpty) {
++        throw Exception('Could not extract proposal ID from response: $createResponse');
++      }
++
+       String signPayload;
+ 
+       // Handle signPayloadPending flag
+@@ -43,7 +47,7 @@ class CardService {
+           proposalId: proposalId,
+         );
+       } else {
+-        signPayload = createResponse['signPayload'];
++        signPayload = createResponse['signPayload'] as String;
+       }
+ 
+       // 3. Sign the proposal using the hardware wallet via the SDK
+@@ -59,7 +63,10 @@ class CardService {
+         signature: signature,
+       );
+ 
+-      final cardId = submitResponse['cardId'] ?? submitResponse['id'];
++      final cardId = (submitResponse['cardId'] ?? submitResponse['id']).toString();
++      if (cardId == 'null' || cardId.isEmpty) {
++         throw Exception('Could not extract card ID from response: $submitResponse');
++      }
+       
+       // 5. Store CardAssignment in DB
+       await _supabase.from('card_assignment').insert({
+diff --git a/patch_auth.sh b/patch_auth.sh
+new file mode 100755
+index 0000000..29ba8ae
+--- /dev/null
++++ b/patch_auth.sh
+@@ -0,0 +1,2 @@
++git apply auth_patch.diff
++echo "Patch applied successfully!"

@@ -141,7 +141,7 @@ class CardService {
         cardId: bmoniCardId,
       );
       
-      final currentStatus = (cardInfo['status'] as String?)?.toUpperCase() ?? 'UNKNOWN';
+      final currentStatus = (cardInfo['status'] ?? cardInfo['cardStatus'] ?? cardInfo['state'] as String?)?.toUpperCase() ?? 'UNKNOWN';
 
       if (currentStatus == desiredStatus) {
         // Already in desired state

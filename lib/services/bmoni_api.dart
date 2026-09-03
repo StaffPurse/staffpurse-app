@@ -240,7 +240,8 @@ class BmoniApi {
     if (response.statusCode >= 200 && response.statusCode < 300) {
       final data = _unwrapData(jsonDecode(response.body));
       if (data is List) return data;
-      if (data['data'] is List) return data['data'];
+      if (data is Map && data.containsKey('transactions')) return data['transactions'] as List;
+      if (data is Map && data.containsKey('data')) return data['data'] as List;
       return [data]; 
     } else {
       throw Exception('Failed to fetch transactions: ${response.body}');

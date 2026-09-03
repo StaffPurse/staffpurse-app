@@ -98,13 +98,14 @@ class BmoniApi {
   }
 
     static Future<Map<String, dynamic>> getOwnerProofChallenge({
+    required String userId,
     required String userOwnerAddress,
   }) async {
-    final url = Uri.parse('${Env.bmoniBaseUrl}/smart-wallets/owner-proof-challenges');
+    final url = Uri.parse('${Env.bmoniBaseUrl}/users/$userId/smart-wallets/owner-proof-challenges');
     final response = await http.post(
       url,
       headers: _headers,
-      body: '{"currency": "CNGN", "userOwnerAddress": "$userOwnerAddress"}',
+      body: jsonEncode({"currency": "CNGN", "userOwnerAddress": userOwnerAddress}),
     );
     if (response.statusCode >= 200 && response.statusCode < 300) {
       return _unwrapData(jsonDecode(response.body));

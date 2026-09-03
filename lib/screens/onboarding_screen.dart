@@ -88,7 +88,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       }
 
       // 1. Get Challenge
-      final challenge = await BmoniApi.getOwnerProofChallenge(userOwnerAddress: userOwnerAddress);
+      final challenge = await BmoniApi.getOwnerProofChallenge(
+        userId: _bmoniUserId!,
+        userOwnerAddress: userOwnerAddress,
+      );
       
       // 2. Sign Challenge
       final signature = await BmoniEmbeddedSdk.signMessage(challenge['eip191Message'], pin: _pinCtrl.text);

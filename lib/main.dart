@@ -4,7 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:bmoni_embedded_sdk/bmoni_embedded_sdk.dart';
 
 import 'env.dart';
-import 'screens/auth_screen.dart';
+import 'screens/landing_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/dashboard_screen.dart';
 
@@ -56,7 +56,7 @@ class _InitialRouterState extends State<InitialRouter> {
   Future<void> _checkRoute() async {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) {
-      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const AuthScreen()));
+      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const LandingScreen()));
       return;
     }
 

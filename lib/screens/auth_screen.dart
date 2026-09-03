@@ -5,7 +5,8 @@ import 'onboarding_screen.dart';
 import 'dashboard_screen.dart';
 
 class AuthScreen extends StatefulWidget {
-  const AuthScreen({super.key});
+  final bool initialIsLogin;
+  const AuthScreen({super.key, this.initialIsLogin = true});
 
   @override
   State<AuthScreen> createState() => _AuthScreenState();
@@ -15,7 +16,13 @@ class _AuthScreenState extends State<AuthScreen> {
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
   bool _isLoading = false;
-  bool _isLogin = true;
+  late bool _isLogin;
+
+  @override
+  void initState() {
+    super.initState();
+    _isLogin = widget.initialIsLogin;
+  }
 
   Future<void> _submit() async {
     final email = _emailCtrl.text.trim();

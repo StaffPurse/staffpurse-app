@@ -39,6 +39,7 @@ dependencies:
   bmoni_embedded_sdk: ^0.0.2
   bkey_uikit: ^0.0.1
   bmoni_embedded_wallets_cards: ^0.0.1
+  shimmer: ^4.0.0
 
 dev_dependencies:
   flutter_test:

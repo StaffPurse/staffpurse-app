@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:bkey_uikit/bkey_uikit.dart';
 import 'package:bmoni_embedded_wallets_cards/bmoni_embedded_wallets_cards.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../services/card_service.dart';
 
@@ -38,39 +38,42 @@ class _CardManagementScreenState extends State<CardManagementScreen> {
   @override
   void initState() {
     super.initState();
-    _isFrozen = widget.currentStatus.toLowerCase() == 'frozen';
+    _isFrozen = widget.currentStatus.toLowerCase() == 'frozen' || widget.currentStatus.toLowerCase() == 'blocked';
     _dailyLimitCtrl = TextEditingController(text: widget.currentDailyLimit.toStringAsFixed(0));
     _txLimitCtrl = TextEditingController(text: widget.currentTxLimit.toStringAsFixed(0));
   }
 
   Future<void> _toggleFreeze() async {
-    setState(() => _isLoading = true);
+    final originalState = _isFrozen;
+    
+    // 1. Optimistic UI Update & Haptic
+    setState(() => _isFrozen = !_isFrozen);
+    HapticFeedback.mediumImpact();
+
     try {
       await _cardService.toggleCardFreeze(
         ownerUserId: widget.ownerUserId,
         cardAssignmentId: widget.cardAssignmentId,
         bmoniCardId: widget.bmoniCardId,
-        freeze: !_isFrozen,
+        freeze: _isFrozen,
       );
-      setState(() => _isFrozen = !_isFrozen);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(_isFrozen ? 'Card frozen' : 'Card active')),
-        );
-      }
+      // Success! Network matched our optimistic state.
     } catch (e) {
+      // 2. Revert on failure
       if (mounted) {
+        setState(() => _isFrozen = originalState);
+        HapticFeedback.heavyImpact(); // Alert user of failure
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
         );
       }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   Future<void> _updateLimits() async {
     setState(() => _isLoading = true);
+    HapticFeedback.selectionClick();
+    
     try {
       final daily = double.parse(_dailyLimitCtrl.text);
       final tx = double.parse(_txLimitCtrl.text);
@@ -84,12 +87,14 @@ class _CardManagementScreenState extends State<CardManagementScreen> {
       );
 
       if (mounted) {
+        HapticFeedback.lightImpact();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Limits updated successfully')),
         );
       }
     } catch (e) {
       if (mounted) {
+        HapticFeedback.heavyImpact();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
         );

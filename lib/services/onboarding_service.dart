@@ -8,6 +8,7 @@ class OnboardingService {
   Future<void> onboardOwner({
     required String firstName,
     required String lastName,
+    required String email,
     required String phoneNumber,
     required String dateOfBirth,
     required String bvn,
@@ -19,6 +20,7 @@ class OnboardingService {
       final bmoniUserId = await BmoniApi.createUserAndKyc(
         firstName: firstName,
         lastName: lastName,
+        email: email,
         phoneNumber: phoneNumber,
         dateOfBirth: dateOfBirth,
         bvn: bvn,
@@ -37,7 +39,9 @@ class OnboardingService {
       }
 
       // 3. Save Business mapping to Supabase
+      final userId = _supabase.auth.currentUser!.id;
       await _supabase.from('business').insert({
+        'owner_id': userId,
         'owner_bmoni_user_id': bmoniUserId,
         'owner_wallet_id': walletAddress, // Or the actual Smart Wallet UUID if different
         'name': businessName,

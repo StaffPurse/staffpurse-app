@@ -37,7 +37,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   Future<void> _checkExistingBusiness() async {
     try {
-      final res = await Supabase.instance.client.from('business').select().limit(1).maybeSingle();
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) return;
+      
+      final res = await Supabase.instance.client
+          .from('business')
+          .select()
+          .eq('owner_id', user.id)
+          .maybeSingle();
+
       if (res != null && mounted) {
         if (res['owner_wallet_id'] == 'PENDING_DEVICE_PROVISIONING') {
           // Prewarmed but missing hardware wallet keys!
@@ -70,8 +78,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // Check if we are just completing a prewarm
-      final res = await Supabase.instance.client.from('business').select().limit(1).maybeSingle();
+      final user = Supabase.instance.client.auth.currentUser!;
+      final res = await Supabase.instance.client
+          .from('business')
+          .select()
+          .eq('owner_id', user.id)
+          .maybeSingle();
       if (res != null && res['owner_wallet_id'] == 'PENDING_DEVICE_PROVISIONING') {
         if (!await BmoniEmbeddedSdk.hasPin()) {
           await BmoniEmbeddedSdk.setPin(_pinCtrl.text);

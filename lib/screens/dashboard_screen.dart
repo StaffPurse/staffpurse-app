@@ -9,6 +9,7 @@ import '../env.dart';
 
 import 'card_issuance_screen.dart';
 import 'card_management_screen.dart';
+import 'auth_screen.dart';
 import '../services/card_service.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -204,6 +205,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
             onPressed: () {
               setState(() => _isLoading = true);
               _fetchData();
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () async {
+              await Supabase.instance.client.auth.signOut();
+              if (mounted) {
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(builder: (_) => const AuthScreen()),
+                );
+              }
             },
           )
         ],

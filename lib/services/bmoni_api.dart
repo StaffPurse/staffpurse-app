@@ -10,7 +10,7 @@ class BmoniApi {
 
   /// Safely unwraps nested objects if the BMONI API returns them.
   static dynamic _unwrapData(dynamic responseBody) {
-    if (responseBody is Map<String, dynamic>) {
+    if (responseBody is Map) {
       if (responseBody.containsKey('data')) return responseBody['data'];
       if (responseBody.containsKey('user')) return responseBody['user'];
       if (responseBody.containsKey('card')) return responseBody['card'];

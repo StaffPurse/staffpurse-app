@@ -20,6 +20,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final _businessNameCtrl = TextEditingController(text: "Acme Corp");
   final _firstNameCtrl = TextEditingController(text: "Test");
   final _lastNameCtrl = TextEditingController(text: "User");
+  final _emailCtrl = TextEditingController(text: "test.user@staffpurse.local");
   final _phoneCtrl = TextEditingController(text: "+2348012345678");
   final _dobCtrl = TextEditingController(text: "1990-01-01");
   final _bvnCtrl = TextEditingController(text: "12345678901");
@@ -95,6 +96,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         businessName: _businessNameCtrl.text,
         firstName: _firstNameCtrl.text,
         lastName: _lastNameCtrl.text,
+        email: _emailCtrl.text,
         phoneNumber: _phoneCtrl.text,
         dateOfBirth: _dobCtrl.text,
         bvn: _bvnCtrl.text,
@@ -140,6 +142,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               BMoniTextFormField(controller: _firstNameCtrl, label: 'First Name'),
               const SizedBox(height: 16),
               BMoniTextFormField(controller: _lastNameCtrl, label: 'Last Name'),
+              const SizedBox(height: 16),
+              BMoniTextFormField(controller: _emailCtrl, label: 'Email Address'),
               const SizedBox(height: 16),
               BMoniTextFormField(controller: _phoneCtrl, label: 'Phone Number (incl. +234)'),
               const SizedBox(height: 16),

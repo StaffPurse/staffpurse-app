@@ -171,20 +171,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 
               const Text('Personal Details', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 16),
-              BMoniTextField(controller: _firstNameCtrl, label: 'First Name'),
+              BMoniTextFormField(controller: _firstNameCtrl, label: 'First Name'),
               const SizedBox(height: 16),
-              BMoniTextField(controller: _lastNameCtrl, label: 'Last Name'),
+              BMoniTextFormField(controller: _lastNameCtrl, label: 'Last Name'),
               const SizedBox(height: 16),
-              BMoniTextField(controller: _emailCtrl, label: 'Email'),
+              BMoniTextFormField(controller: _emailCtrl, label: 'Email'),
               const SizedBox(height: 16),
-              BMoniTextField(controller: _phoneCtrl, label: 'Phone (+234...)'),
+              BMoniTextFormField(controller: _phoneCtrl, label: 'Phone (+234...)'),
               const SizedBox(height: 16),
               
               // BVN FIELD WITH VERIFICATION UI
               Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  BMoniTextField(
+                  BMoniTextFormField(
                     controller: _bvnCtrl, 
                     label: 'BVN (Use 22222222222 in Sandbox)',
                   ),
@@ -219,14 +219,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               ),
               const SizedBox(height: 16),
               
-              BMoniTextField(controller: _ninCtrl, label: 'NIN (11 digits)'),
+              BMoniTextFormField(controller: _ninCtrl, label: 'NIN (11 digits)'),
               const SizedBox(height: 32),
               
               const Text('Business Details', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 16),
-              BMoniTextField(controller: _businessNameCtrl, label: 'Business Name'),
+              BMoniTextFormField(controller: _businessNameCtrl, label: 'Business Name'),
               const SizedBox(height: 16),
-              BMoniTextField(controller: _pinCtrl, label: 'Wallet PIN (6 digits)', obscureText: true),
+              BMoniTextFormField(controller: _pinCtrl, label: 'Wallet PIN (6 digits)', obscureText: true),
               const SizedBox(height: 32),
               
               _isLoading

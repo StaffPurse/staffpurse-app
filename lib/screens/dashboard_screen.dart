@@ -83,8 +83,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           // ignore
         }
         
-        // 3a. ORPHAN RECONCILIATION
-: Sync any rogue cards from BMONI directly
+        // 3a. ORPHAN RECONCILIATION: Sync any rogue cards from BMONI directly
         try {
           final liveCardsUrl = Uri.parse('${Env.bmoniBaseUrl}/users/$ownerUserId/smart-wallets/$walletId/cards');
           final liveCardsRes = await http.get(liveCardsUrl, headers: {
@@ -124,7 +123,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ownerUserId: ownerUserId,
               cardAssignmentId: card['id'],
               bmoniCardId: card['bmoni_card_id'],
-                            staffId: staff['id'],
             ).catchError((_) {}); 
           }
         }
@@ -307,6 +305,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           builder: (_) => CardManagementScreen(
                             ownerUserId: _business!['owner_bmoni_user_id'],
                             bmoniCardId: card['bmoni_card_id'],
+                            staffId: staff['id'],
                             cardAssignmentId: card['id'],
                             currentDailyLimit: (card['daily_limit_ngn'] ?? 0) / 100, 
                             currentTxLimit: (card['per_transaction_limit_ngn'] ?? 0) / 100,

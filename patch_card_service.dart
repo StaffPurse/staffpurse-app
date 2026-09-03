@@ -4,55 +4,52 @@ void main() {
   var file = File('lib/services/card_service.dart');
   var content = file.readAsStringSync();
   
-  var oldLogic = '''
+  var newMethod = '''
+  /// Removes a staff member (Freezes the card and hides them from the dashboard)
+  Future<void> removeStaff({
+    required String ownerUserId,
+    required String staffId,
+    required String cardAssignmentId,
+    required String bmoniCardId,
+  }) async {
     try {
-      // 1. Create StaffMember in DB
-      final staffResponse = await _supabase.from('staff_member').insert({
-        'business_id': businessId,
-        'name': staffName,
-        'phone_number': staffPhone,
-      }).select('id').single();
-      final staffId = staffResponse['id'];
-
-      // 2. Call BMONI to create the card
-      final createResponse = await BmoniApi.createCard(
+      // 1. Freeze the card on BMONI (per AGENTS.md rule: never deactivate, only freeze/block)
+      final cardInfo = await BmoniApi.getCard(
         userId: ownerUserId,
-        smartWalletId: ownerWalletId,
-        cardName: "\$staffName's Card",
-        nin: nin,
+        cardId: bmoniCardId,
       );
+      
+      final currentStatus = (cardInfo['status'] ?? cardInfo['cardStatus'] ?? cardInfo['state'] as String?)?.toUpperCase() ?? 'UNKNOWN';
 
-      final proposalId = (createResponse['proposalId'] ?? createResponse['id']).toString();
-''';
-
-  var newLogic = '''
-    try {
-      // 1. Create StaffMember in DB
-      final staffResponse = await _supabase.from('staff_member').insert({
-        'business_id': businessId,
-        'name': staffName,
-        'phone_number': staffPhone,
-      }).select('id').single();
-      final staffId = staffResponse['id'];
-
-      // 2. Call BMONI to create the card
-      Map<String, dynamic> createResponse;
-      try {
-        createResponse = await BmoniApi.createCard(
-          userId: ownerUserId,
-          smartWalletId: ownerWalletId,
-          cardName: "\$staffName's Card",
-          nin: nin,
-        );
-      } catch (e) {
-        // Rollback DB if BMONI API fails (e.g. 404 Wallet Not Found)
-        await _supabase.from('staff_member').delete().eq('id', staffId);
-        rethrow;
+      if (currentStatus != 'BLOCKED') {
+        if (currentStatus != 'ACTIVE' && currentStatus != 'PENDING') {
+          // It's already in an irreversible state, we can skip the API call
+        } else {
+          await BmoniApi.updateCardStatus(
+            userId: ownerUserId,
+            cardId: bmoniCardId,
+            status: 'BLOCKED',
+          );
+        }
       }
 
-      final proposalId = (createResponse['proposalId'] ?? createResponse['id']).toString();
+      // 2. Mark staff member as removed in DB
+      await _supabase.from('staff_member').update({
+        'status': 'removed',
+      }).eq('id', staffId);
+
+      // 3. Mark card as revoked locally
+      await _supabase.from('card_assignment').update({
+        'status': 'revoked',
+      }).eq('id', cardAssignmentId);
+
+    } catch (e) {
+      throw Exception('Failed to remove staff: \$e');
+    }
+  }
+}
 ''';
 
-  content = content.replaceAll(oldLogic.trim(), newLogic.trim());
+  content = content.replaceFirst(RegExp(r'\}\s*$'), newMethod);
   file.writeAsStringSync(content);
 }

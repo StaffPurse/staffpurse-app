@@ -8,6 +8,7 @@ import '../services/card_service.dart';
 class CardManagementScreen extends StatefulWidget {
   final String ownerUserId;
   final String bmoniCardId;
+  final String staffId;
   final String cardAssignmentId;
   final double currentDailyLimit;
   final double currentTxLimit;
@@ -18,6 +19,7 @@ class CardManagementScreen extends StatefulWidget {
     super.key,
     required this.ownerUserId,
     required this.bmoniCardId,
+    required this.staffId,
     required this.cardAssignmentId,
     required this.currentDailyLimit,
     required this.currentTxLimit,
@@ -75,6 +77,41 @@ class _CardManagementScreenState extends State<CardManagementScreen> {
           SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
         );
       }
+    }
+  }
+
+    Future<void> _removeStaff() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Remove Staff'),
+        content: const Text('Are you sure you want to remove this staff member? This will permanently block their card and hide them from your dashboard.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Remove', style: TextStyle(color: Colors.red))),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    setState(() => _isLoading = true);
+    try {
+      await _cardService.removeStaff(
+        ownerUserId: widget.ownerUserId,
+        staffId: widget.staffId,
+        cardAssignmentId: widget.cardAssignmentId,
+        bmoniCardId: widget.bmoniCardId,
+      );
+      if (mounted) {
+        Navigator.pop(context); // Go back to dashboard
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString()), backgroundColor: Colors.red));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -177,8 +214,22 @@ class _CardManagementScreenState extends State<CardManagementScreen> {
               text: 'Save Limits',
               isLoading: _isLoading,
             ),
+            const SizedBox(height: 48),
+            OutlinedButton(
+              onPressed: _isLoading ? null : _removeStaff,
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                side: const BorderSide(color: Colors.red),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              child: const Text(
+                'Remove Staff',
+                style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+              ),
+            ),
           ],
         ),
+
       ),
     );
   }

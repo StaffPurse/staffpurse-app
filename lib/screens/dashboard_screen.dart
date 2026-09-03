@@ -44,7 +44,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       if (businessRes != null) {
         final staffRes = await _supabase.from('staff_member')
             .select('*, card_assignment(*)')
-            .eq('business_id', businessRes['id']);
+            .eq('business_id', businessRes['id'])
+            .eq('status', 'active');
 
         final ownerUserId = businessRes['owner_bmoni_user_id'];
         final walletId = businessRes['owner_wallet_id'];
@@ -89,6 +90,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ownerUserId: ownerUserId,
               cardAssignmentId: card['id'],
               bmoniCardId: card['bmoni_card_id'],
+                            staffId: staff['id'],
             ).catchError((_) {}); 
           }
         }

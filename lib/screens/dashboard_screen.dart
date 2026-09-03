@@ -232,7 +232,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       walletIndex: 0,
       name: _business!['name'],
       currency: 'NGN',
-      balance: 150000.0,
+      balance: _walletBalance,
     );
 
     return Scaffold(

@@ -136,7 +136,7 @@ class BmoniApi {
     throw Exception('Failed to create managed wallet: ${response.body}');
   }
 
-  static Future<void> startNigeriaOnboarding({
+  static Future<Map<String, dynamic>> startNigeriaOnboarding({
     required String userId,
     required String bvn,
     required String ngnWalletAddress,
@@ -155,6 +155,18 @@ class BmoniApi {
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw Exception('Failed to start Nigeria onboarding: ${response.body}');
     }
+    return jsonDecode(response.body);
+  }
+
+  static Future<Map<String, dynamic>> getOnboardingStatus({
+    required String userId,
+  }) async {
+    final url = Uri.parse('${Env.bmoniBaseUrl}/users/$userId/onboarding/status');
+    final response = await http.get(url, headers: _headers);
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Failed to get onboarding status: ${response.body}');
+    }
+    return jsonDecode(response.body);
   }
 
   /// Create a card

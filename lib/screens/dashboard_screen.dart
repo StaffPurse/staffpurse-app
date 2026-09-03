@@ -3,6 +3,9 @@ import 'package:bkey_uikit/bkey_uikit.dart';
 import 'package:bmoni_embedded_wallets_cards/bmoni_embedded_wallets_cards.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import '../env.dart';
 
 import 'card_issuance_screen.dart';
 import 'card_management_screen.dart';
@@ -40,6 +43,40 @@ class _DashboardScreenState extends State<DashboardScreen> {
             .eq('business_id', businessRes['id']);
 
         final ownerUserId = businessRes['owner_bmoni_user_id'];
+        final walletId = businessRes['owner_wallet_id'];
+
+        // 3a. ORPHAN RECONCILIATION: Sync any rogue cards from BMONI directly
+        try {
+          final liveCardsUrl = Uri.parse('${Env.bmoniBaseUrl}/users/$ownerUserId/smart-wallets/$walletId/cards');
+          final liveCardsRes = await http.get(liveCardsUrl, headers: {
+            "Content-Type": "application/json",
+            "x-api-key": Env.bmoniApiKey,
+          });
+          
+          if (liveCardsRes.statusCode >= 200 && liveCardsRes.statusCode < 300) {
+            final liveCards = jsonDecode(liveCardsRes.body) as List<dynamic>;
+            
+            for (final liveCard in liveCards) {
+              final bmoniId = liveCard['id'];
+              // Check if we have this card in our local state
+              bool existsLocally = staffRes.any((staff) {
+                final cards = staff['card_assignment'] as List<dynamic>? ?? [];
+                return cards.any((c) => c['bmoni_card_id'] == bmoniId);
+              });
+
+              if (!existsLocally) {
+                // Orphan found! We would ideally assign it back to the right staff, but since 
+                // BMONI doesn't know "staff", we might not know who it belongs to.
+                // For the hackathon MVP, we just silently log it.
+                print("Orphaned card found in BMONI: $bmoniId");
+              }
+            }
+          }
+        } catch (e) {
+          // ignore reconciliation errors
+        }
+
+        // 3b. Sync transactions for all active cards in the background
         for (final staff in staffRes) {
           final cards = staff['card_assignment'] as List<dynamic>? ?? [];
           if (cards.isNotEmpty) {
@@ -222,6 +259,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             currentDailyLimit: (card['daily_limit_ngn'] ?? 0) / 100, 
                             currentTxLimit: (card['per_transaction_limit_ngn'] ?? 0) / 100,
                             currentStatus: card['status'],
+                            walletBalance: wallet.balance,
                           ),
                         )).then((_) => _fetchData());
                       } else {

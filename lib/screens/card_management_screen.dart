@@ -12,6 +12,7 @@ class CardManagementScreen extends StatefulWidget {
   final double currentDailyLimit;
   final double currentTxLimit;
   final String currentStatus;
+  final double walletBalance;
   
   const CardManagementScreen({
     super.key,
@@ -21,6 +22,7 @@ class CardManagementScreen extends StatefulWidget {
     required this.currentDailyLimit,
     required this.currentTxLimit,
     required this.currentStatus,
+    required this.walletBalance,
   });
 
   @override
@@ -31,6 +33,7 @@ class _CardManagementScreenState extends State<CardManagementScreen> {
   final _cardService = CardService();
   bool _isLoading = false;
   late bool _isFrozen;
+  late bool _isIrreversibleStatus;
 
   late TextEditingController _dailyLimitCtrl;
   late TextEditingController _txLimitCtrl;
@@ -38,7 +41,12 @@ class _CardManagementScreenState extends State<CardManagementScreen> {
   @override
   void initState() {
     super.initState();
-    _isFrozen = widget.currentStatus.toLowerCase() == 'frozen' || widget.currentStatus.toLowerCase() == 'blocked';
+    final status = widget.currentStatus.toLowerCase();
+    _isFrozen = status == 'frozen' || status == 'blocked';
+    
+    // Check if the card is in a state we can't safely toggle (e.g., stolen, restricted, deactivated)
+    _isIrreversibleStatus = !['active', 'frozen', 'blocked', 'pending'].contains(status);
+
     _dailyLimitCtrl = TextEditingController(text: widget.currentDailyLimit.toStringAsFixed(0));
     _txLimitCtrl = TextEditingController(text: widget.currentTxLimit.toStringAsFixed(0));
   }
@@ -78,6 +86,19 @@ class _CardManagementScreenState extends State<CardManagementScreen> {
       final daily = double.parse(_dailyLimitCtrl.text);
       final tx = double.parse(_txLimitCtrl.text);
 
+      if (daily > widget.walletBalance) {
+        // Edge Case: Setting a limit higher than liquid balance. The provider allows it, 
+        // but we should explicitly warn the user.
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Warning: Daily limit exceeds current wallet balance. Transactions may decline.'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      }
+
       await _cardService.setCardLimits(
         ownerUserId: widget.ownerUserId,
         cardAssignmentId: widget.cardAssignmentId,
@@ -113,13 +134,25 @@ class _CardManagementScreenState extends State<CardManagementScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            BMoniInfoCard(
-              title: 'Card Status: ${_isFrozen ? 'FROZEN' : 'ACTIVE'}',
-              description: 'Freeze to instantly block all transactions.',
-            ),
+            if (_isIrreversibleStatus)
+              Container(
+                padding: const EdgeInsets.all(16),
+                color: Colors.red.shade50,
+                child: Text(
+                  'Card is currently ${widget.currentStatus.toUpperCase()}. This state was set by the issuer and cannot be reversed from the app.',
+                  style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                ),
+              )
+            else
+              BMoniInfoCard(
+                title: 'Card Status: ${_isFrozen ? 'FROZEN' : 'ACTIVE'}',
+                description: 'Freeze to instantly block all transactions.',
+              ),
+            
             const SizedBox(height: 16),
+            
             BMoniButton(
-              onPressed: _isLoading ? null : _toggleFreeze,
+              onPressed: (_isLoading || _isIrreversibleStatus) ? null : _toggleFreeze,
               text: _isFrozen ? 'Unfreeze Card' : 'Freeze Card',
               variant: _isFrozen ? BMoniButtonVariant.primary : BMoniButtonVariant.secondary,
               isLoading: _isLoading,

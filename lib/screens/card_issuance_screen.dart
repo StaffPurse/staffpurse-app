@@ -40,7 +40,13 @@ class _CardIssuanceScreenState extends State<CardIssuanceScreen> {
 
     try {
       const storage = FlutterSecureStorage();
-      final nin = await storage.read(key: 'owner_nin') ?? '';
+      String nin = await storage.read(key: 'owner_nin') ?? '';
+      
+      // Fallback for Demo: If the user ran the prewarm script and skipped onboarding, 
+      // the secure storage will be empty. We inject the sandbox dummy NIN.
+      if (nin.isEmpty) {
+        nin = '12345678901';
+      }
 
       await _cardService.addStaffAndIssueCard(
         businessId: widget.businessId,

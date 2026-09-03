@@ -30,6 +30,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   List<EmbeddedWalletTransaction> _transactions = [];
   bool _isLoading = true;
   bool _isProvisioning = false;
+  double _walletBalance = 0.0;
 
   @override
   void initState() {
@@ -152,11 +153,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
           );
         }).toList();
 
+        double fetchedBalance = 0.0;
+        try {
+          final balances = await BmoniApi.getBalances(userId: ownerUserId);
+          for (var b in balances) {
+            if (b['currency'] == 'CNGN') {
+              fetchedBalance = double.tryParse(b['availableBalance']?.toString() ?? b['balance']?.toString() ?? b['amount']?.toString() ?? '0') ?? 0.0;
+            }
+          }
+        } catch (e) {
+          print('Error fetching balances: $e');
+        }
+
         if (mounted) {
           setState(() {
             _business = businessRes;
             _staffCards = staffRes;
             _transactions = mappedTxs;
+            _walletBalance = fetchedBalance;
           });
         }
       }

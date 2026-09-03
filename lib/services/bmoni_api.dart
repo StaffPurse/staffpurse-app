@@ -8,6 +8,14 @@ class BmoniApi {
     'x-api-key': Env.bmoniApiKey,
   };
 
+  /// Safely unwraps nested 'data' objects if the BMONI API returns them.
+  static dynamic _unwrapData(dynamic responseBody) {
+    if (responseBody is Map<String, dynamic> && responseBody.containsKey('data')) {
+      return responseBody['data'];
+    }
+    return responseBody;
+  }
+
   /// Creates a user in BMONI and initiates the NGN onboarding/KYC flow.
   /// Returns the newly created user ID.
   static Future<String> createUserAndKyc({
@@ -94,7 +102,7 @@ class BmoniApi {
     );
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
-      return jsonDecode(response.body);
+      return _unwrapData(jsonDecode(response.body));
     } else {
       throw Exception('Failed to create card: ${response.body}');
     }
@@ -112,7 +120,7 @@ class BmoniApi {
       final response = await http.get(url, headers: _headers);
       
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+        final data = _unwrapData(jsonDecode(response.body));
         return data['signPayload'] as String;
       } else if (response.statusCode == 409) {
         // 409 means "not ready, keep polling"
@@ -139,7 +147,7 @@ class BmoniApi {
     );
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
-      return jsonDecode(response.body);
+      return _unwrapData(jsonDecode(response.body));
     } else {
       throw Exception('Failed to submit signature: ${response.body}');
     }
@@ -157,7 +165,7 @@ class BmoniApi {
     );
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
-      return jsonDecode(response.body);
+      return _unwrapData(jsonDecode(response.body));
     } else {
       throw Exception('Failed to get limits: ${response.body}');
     }
@@ -194,7 +202,7 @@ class BmoniApi {
     final response = await http.get(url, headers: _headers);
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
-      return jsonDecode(response.body);
+      return _unwrapData(jsonDecode(response.body));
     } else {
       throw Exception('Failed to get card: ${response.body}');
     }
@@ -227,7 +235,7 @@ class BmoniApi {
     final response = await http.get(url, headers: _headers);
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
-      final data = jsonDecode(response.body);
+      final data = _unwrapData(jsonDecode(response.body));
       if (data is List) return data;
       if (data['data'] is List) return data['data'];
       return [data]; 

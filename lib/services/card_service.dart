@@ -32,7 +32,11 @@ class CardService {
         nin: nin,
       );
 
-      final proposalId = createResponse['proposalId'];
+      final proposalId = (createResponse['proposalId'] ?? createResponse['id']).toString();
+      if (proposalId == 'null' || proposalId.isEmpty) {
+        throw Exception('Could not extract proposal ID from response: $createResponse');
+      }
+
       String signPayload;
 
       // Handle signPayloadPending flag
@@ -43,7 +47,7 @@ class CardService {
           proposalId: proposalId,
         );
       } else {
-        signPayload = createResponse['signPayload'];
+        signPayload = createResponse['signPayload'] as String;
       }
 
       // 3. Sign the proposal using the hardware wallet via the SDK
@@ -59,7 +63,10 @@ class CardService {
         signature: signature,
       );
 
-      final cardId = submitResponse['cardId'] ?? submitResponse['id'];
+      final cardId = (submitResponse['cardId'] ?? submitResponse['id']).toString();
+      if (cardId == 'null' || cardId.isEmpty) {
+         throw Exception('Could not extract card ID from response: $submitResponse');
+      }
       
       // 5. Store CardAssignment in DB
       await _supabase.from('card_assignment').insert({

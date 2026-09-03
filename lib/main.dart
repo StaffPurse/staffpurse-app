@@ -33,9 +33,8 @@ class StaffPurseApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'StaffPurse',
-      // Apply the BMONI theme globally
-      theme: BMoniTheme.lightTheme(),
-      darkTheme: BMoniTheme.darkTheme(),
+      theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple)),
+      darkTheme: ThemeData.dark(),
       themeMode: ThemeMode.system,
       home: const OnboardingScreen(),
     );

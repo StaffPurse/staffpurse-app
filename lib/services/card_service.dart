@@ -115,6 +115,8 @@ class CardService {
     } catch (e) {
       throw Exception('Failed to set limits: $e');
     }
+  }
+
   /// Freezes or unfreezes a card.
   /// Checks live BMONI status first to prevent blind retries on invalid states.
   Future<void> toggleCardFreeze({

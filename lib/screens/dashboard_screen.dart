@@ -104,7 +104,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             direction: EmbeddedTransactionDirection.outgoing,
             delta: 'debit',
             amount: majorAmount,
-            status: EmbeddedWalletTransactionStatus.successful,
+            status: EmbeddedWalletTransactionStatus.success,
             description: tx['description'] ?? 'Card Spend',
             title: staffName,
             createdAt: tx['occurred_at'],
@@ -294,7 +294,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             const SizedBox(height: 32),
             EmbeddedWalletTransactionsSection(
               title: "Recent Staff Spending",
-              emptyState: "No recent transactions",
+              emptyState: const Text("No recent transactions"),
               transactions: _transactions,
               itemBuilder: (context, tx) {
                 return ListTile(

@@ -40,6 +40,9 @@ dependencies:
   bkey_uikit: ^0.0.1
   bmoni_embedded_wallets_cards: ^0.0.1
   shimmer: ^3.0.0
+  http: ^1.6.0
+  flutter_secure_storage: ^10.3.1
+  supabase: ^2.16.1
 
 dev_dependencies:
   flutter_test:

@@ -4,9 +4,11 @@ import '../env.dart';
 
 class BmoniApi {
   static Future<Map<String, dynamic>> bvnLookup({
+    required String userId,
     required String bvn,
   }) async {
-    final url = Uri.parse('${Env.bmoniBaseUrl}/kyc/bvn-lookup/$bvn');
+    // The exact verified bvn-lookup endpoint requires the active userId!
+    final url = Uri.parse('${Env.bmoniBaseUrl}/users/$userId/kyc/bvn-lookup/$bvn');
     final response = await http.get(url, headers: _headers);
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw Exception('BVN lookup failed: ${response.body}');

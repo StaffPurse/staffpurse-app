@@ -1,3 +1,10 @@
+import 'dart:io';
+
+void main() {
+  var file = File('lib/services/onboarding_service.dart');
+  var content = file.readAsStringSync();
+  
+  var newClass = '''
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:bmoni_embedded_sdk/bmoni_embedded_sdk.dart';
 import 'bmoni_api.dart';
@@ -64,7 +71,7 @@ class OnboardingService {
         'userOwnerAddress': userOwnerAddress,
       };
     } catch (e) {
-      throw Exception('Setup failed: $e');
+      throw Exception('Setup failed: \$e');
     }
   }
 
@@ -85,7 +92,11 @@ class OnboardingService {
         ngnWalletIndex: 0,
       );
     } catch (e) {
-      throw Exception('KYC Activation failed: $e');
+      throw Exception('KYC Activation failed: \$e');
     }
   }
+}
+''';
+
+  file.writeAsStringSync(newClass);
 }

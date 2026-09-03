@@ -25,12 +25,19 @@ class CardService {
       final staffId = staffResponse['id'];
 
       // 2. Call BMONI to create the card
-      final createResponse = await BmoniApi.createCard(
-        userId: ownerUserId,
-        smartWalletId: ownerWalletId,
-        cardName: "$staffName's Card",
-        nin: nin,
-      );
+      Map<String, dynamic> createResponse;
+      try {
+        createResponse = await BmoniApi.createCard(
+          userId: ownerUserId,
+          smartWalletId: ownerWalletId,
+          cardName: "$staffName's Card",
+          nin: nin,
+        );
+      } catch (e) {
+        // Rollback DB if BMONI API fails (e.g. 404 Wallet Not Found)
+        await _supabase.from('staff_member').delete().eq('id', staffId);
+        rethrow;
+      }
 
       final proposalId = (createResponse['proposalId'] ?? createResponse['id']).toString();
       if (proposalId == 'null' || proposalId.isEmpty) {

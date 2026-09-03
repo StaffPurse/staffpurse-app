@@ -36,7 +36,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _fetchData() async {
     try {
-      final businessRes = await _supabase.from('business').select().limit(1).maybeSingle();
+      final businessRes = await _supabase.from('business')
+          .select()
+          .eq('owner_id', _supabase.auth.currentUser!.id)
+          .maybeSingle();
       
       if (businessRes != null) {
         final staffRes = await _supabase.from('staff_member')

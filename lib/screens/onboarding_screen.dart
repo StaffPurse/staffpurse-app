@@ -80,18 +80,42 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       if (!await BmoniEmbeddedSdk.hasPin()) {
         await BmoniEmbeddedSdk.setPin(_pinCtrl.text);
       }
-      String walletAddress;
+      String userOwnerAddress;
       if (await BmoniEmbeddedSdk.hasWallet()) {
-        walletAddress = (await BmoniEmbeddedSdk.walletAddress())!;
+        userOwnerAddress = (await BmoniEmbeddedSdk.walletAddress())!;
       } else {
-        walletAddress = await BmoniEmbeddedSdk.initWallet();
+        userOwnerAddress = await BmoniEmbeddedSdk.initWallet();
       }
+
+      // 1. Get Challenge
+      final challenge = await BmoniApi.getOwnerProofChallenge(userOwnerAddress: userOwnerAddress);
+      
+      // 2. Sign Challenge
+      final signature = await BmoniEmbeddedSdk.signMessage(challenge['eip191Message'], pin: _pinCtrl.text);
+      
+      // 3. Create Managed Wallet
+      final walletResult = await BmoniApi.createManagedWallet(
+        userId: _bmoniUserId!,
+        userOwnerAddress: userOwnerAddress,
+        challengeId: challenge['challengeId'],
+        signature: signature,
+      );
+      
+      final smartWalletId = walletResult['id'];
+
+      // 4. Start Nigeria Onboarding
+      await BmoniApi.startNigeriaOnboarding(
+        userId: _bmoniUserId!,
+        bvn: _bvnCtrl.text,
+        ngnWalletAddress: userOwnerAddress, // The proxy reuses this for fiat
+        ngnWalletIndex: 0,
+      );
       
       final userId = _supabase.auth.currentUser!.id;
       await _supabase.from('business').insert({
         'owner_id': userId,
         'owner_bmoni_user_id': _bmoniUserId,
-        'owner_wallet_id': walletAddress,
+        'owner_wallet_id': smartWalletId, // Save the actual UUID, not the 0x address
         'name': _businessNameCtrl.text,
       });
 

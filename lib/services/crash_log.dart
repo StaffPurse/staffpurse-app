@@ -13,8 +13,14 @@ String deviceArch() {
   final v = Platform.version;
   // Platform.version reports the target arch as `on 'android_arm64'` or
   // `on "android_arm"` — the quote style varies across Dart versions.
-  final m = RegExp(r"on ['"]([^'"]+)['"]").firstMatch(v);
-  return m != null ? m.group(1)! : v;
+  // (No regex here: raw strings can't hold escaped quotes cleanly.)
+  final i = v.indexOf('on ');
+  if (i < 0) return v;
+  return v
+      .substring(i + 3)
+      .replaceAll("'", '')
+      .replaceAll('"', '')
+      .trim();
 }
 
 /// Minimal on-device diagnostics log.

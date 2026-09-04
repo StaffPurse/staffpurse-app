@@ -37,8 +37,8 @@ class OnboardingService {
         throw Exception(
           'This build of StaffPurse only supports 64-bit ARM devices '
           '(found: $arch). The BMONI signing library is arm64-only, so wallet '
-          'creation cannot run on this device. Install on an arm64 device or '
-          'ask for a fat-APK build.',
+          'creation cannot run on this device. Use a 64-bit Android device, or '
+          'ask the developer for a 32-bit build of the BMONI signer library.',
         );
       }
 

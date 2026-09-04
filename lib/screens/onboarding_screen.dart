@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:bkey_uikit/bkey_uikit.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/onboarding_service.dart';
+import '../services/account_service.dart';
 import '../services/user_facing_error.dart';
 import '../widgets/error_banner.dart';
 import 'kyc_screen.dart';
@@ -33,6 +34,56 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final user = Supabase.instance.client.auth.currentUser;
     if (user != null && user.email != null) {
       _emailCtrl.text = user.email!;
+    }
+  }
+
+  /// Lets a user stuck with a burned email/phone (orphaned BMONI user) wipe
+  /// the account cleanly and start over instead of being blocked forever.
+  Future<void> _confirmDeleteAccount() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete this account?'),
+        content: const Text(
+          'This removes your business, staff cards and this device\u2019s wallet, '
+          'and signs you out. Your login email stays registered \u2014 sign back in '
+          'anytime to start fresh. A BMONI account can be undone within 90 days.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    try {
+      final warning = await AccountService().deleteAccount();
+      if (mounted) {
+        if (warning != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(warning), backgroundColor: Colors.orange),
+          );
+        }
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const LandingScreen()),
+          (route) => false,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = userFacingError(e);
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -171,6 +222,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     onPressed: _submit,
                     text: 'Create Wallet',
                   ),
+              const SizedBox(height: 16),
+              TextButton(
+                onPressed: _isLoading ? null : _confirmDeleteAccount,
+                child: const Text('Having trouble? Delete this account and start over'),
+              ),
             ],
           ),
         ),

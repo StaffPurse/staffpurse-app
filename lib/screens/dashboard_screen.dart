@@ -13,6 +13,8 @@ import 'card_issuance_screen.dart';
 import 'card_management_screen.dart';
 import 'landing_screen.dart';
 import '../services/card_service.dart';
+import '../services/account_service.dart';
+import '../services/user_facing_error.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -61,6 +63,49 @@ class _DashboardScreenState extends State<DashboardScreen> {
     // Give up after the cap so the staff list unblocks and cards stay tappable.
     if (mounted && _isProvisioning) {
       setState(() => _isProvisioning = false);
+    }
+  }
+
+  Future<void> _confirmDeleteAccount() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete this account?'),
+        content: const Text(
+          'This removes your business, staff cards and this device\u2019s wallet, '
+          'and signs you out. Your login email stays registered \u2014 sign back in '
+          'anytime to start fresh. A BMONI account can be undone within 90 days.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    try {
+      final warning = await AccountService().deleteAccount();
+      if (mounted) {
+        if (warning != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(warning), backgroundColor: Colors.orange),
+          );
+        }
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const LandingScreen()),
+          (route) => false,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(userFacingError(e)), backgroundColor: Colors.red),
+        );
+      }
     }
   }
 
@@ -309,7 +354,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 );
               }
             },
-          )
+          ),
+          PopupMenuButton<String>(
+            tooltip: 'More',
+            onSelected: (value) {
+              if (value == 'delete') _confirmDeleteAccount();
+            },
+            itemBuilder: (context) => const [
+              PopupMenuItem(value: 'delete', child: Text('Delete Account')),
+            ],
+          ),
         ],
       ),
       body: SingleChildScrollView(

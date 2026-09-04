@@ -372,4 +372,28 @@ class BmoniApi {
     }
   }
 
+  /// Deletes (deactivates) a user account. Requires all wallets to be empty.
+  /// Reversible within 90 days via [reactivateUser].
+  static Future<void> deleteUser({
+    required String userId,
+  }) async {
+    final url = Uri.parse('${Env.bmoniBaseUrl}/users/$userId');
+    final response = await http.delete(url, headers: _headers);
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Failed to delete account: ${response.body}');
+    }
+  }
+
+  /// Reactivates a previously deleted (deactivated) account. Safe to call on
+  /// an active user — it responds 200 with "User is already active".
+  static Future<void> reactivateUser({
+    required String userId,
+  }) async {
+    final url = Uri.parse('${Env.bmoniBaseUrl}/users/$userId/reactivate');
+    final response = await http.post(url, headers: _headers);
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Failed to reactivate account: ${response.body}');
+    }
+  }
+
 }

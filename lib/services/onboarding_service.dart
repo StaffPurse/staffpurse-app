@@ -59,8 +59,7 @@ class OnboardingService {
       if (storedId != null && storedId.isNotEmpty &&
           storedUid == supabaseUid &&
           storedEmail == email.toLowerCase()) {
-        await CrashLog.write('onboarding: recovered existing BMONI user ($storedId)');
-        return storedId;
+        return _adoptExistingUser(storedId, email, cleanPhone, supabaseUid);
       }
 
       // The duplicate response usually names the existing user — take it.
@@ -68,9 +67,7 @@ class OnboardingService {
         r'[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}',
       ).firstMatch(e.toString())?.group(0);
       if (existingId != null) {
-        await _persistBmoniUser(existingId, email, cleanPhone, supabaseUid);
-        await CrashLog.write('onboarding: recovered BMONI user from response ($existingId)');
-        return existingId;
+        return _adoptExistingUser(existingId, email, cleanPhone, supabaseUid);
       }
 
       throw Exception(
@@ -91,6 +88,26 @@ class OnboardingService {
     await _storage.write(key: 'owner_bmoni_email', value: email.toLowerCase());
     await _storage.write(key: 'owner_bmoni_phone', value: phone);
     await _storage.write(key: 'owner_supabase_uid', value: supabaseUid);
+  }
+
+  /// Adopts an existing BMONI user (same Supabase account + email, or one the
+  /// duplicate response named) and reactivates it in case it was deleted
+  /// earlier. Reactivation is a no-op on an active user.
+  Future<String> _adoptExistingUser(
+    String userId,
+    String email,
+    String phone,
+    String supabaseUid,
+  ) async {
+    await _persistBmoniUser(userId, email, phone, supabaseUid);
+    await CrashLog.write('onboarding: recovered existing BMONI user ($userId)');
+    try {
+      await BmoniApi.reactivateUser(userId: userId);
+      await CrashLog.write('onboarding: reactivated BMONI user ($userId)');
+    } catch (e) {
+      await CrashLog.write('onboarding: reactivate skipped: $e');
+    }
+    return userId;
   }
 
   /// Best-effort lookup of an existing smart wallet when registration reports

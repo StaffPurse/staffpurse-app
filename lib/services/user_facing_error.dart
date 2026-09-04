@@ -65,6 +65,10 @@ String userFacingError(Object error, {String? fallback}) {
       raw.contains('Unauthorized') ||
       raw.contains('403')) {
     message = 'Your session has expired or your details are incorrect. Please log in again.';
+  } else if (raw.contains('E101') ||
+      raw.contains('active balances') ||
+      raw.contains('cannot deactivate')) {
+    message = 'Your wallet still has funds. Move the funds out before deleting the account.';
   } else if (raw.contains('404') || raw.contains('Not Found')) {
     message = 'That doesn\u2019t exist on the server yet. Try again shortly.';
   } else if (raw.contains('400') ||

@@ -55,7 +55,7 @@ class _FundWalletScreenState extends State<FundWalletScreen> {
   void _copyToClipboard(String text, String label) {
     Clipboard.setData(ClipboardData(text: text));
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('\$label copied to clipboard'), duration: const Duration(seconds: 2)),
+      SnackBar(content: Text('$label copied to clipboard'), duration: const Duration(seconds: 2)),
     );
   }
 

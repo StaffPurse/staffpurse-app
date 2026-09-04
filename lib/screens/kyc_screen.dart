@@ -2,6 +2,7 @@ import 'landing_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:bkey_uikit/bkey_uikit.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../services/onboarding_service.dart';
@@ -17,6 +18,7 @@ class KycScreen extends StatefulWidget {
 }
 
 class _KycScreenState extends State<KycScreen> {
+  final _formKey = GlobalKey<FormState>();
   final _bvnCtrl = TextEditingController();
   final _ninCtrl = TextEditingController();
   
@@ -100,10 +102,7 @@ class _KycScreenState extends State<KycScreen> {
       setState(() => _errorMessage = "Please enter a valid 11-digit BVN and wait for verification.");
       return;
     }
-    if (_ninCtrl.text.trim().length != 11) {
-      setState(() => _errorMessage = "Please enter a valid 11-digit NIN.");
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
 
     setState(() {
       _isLoading = true;
@@ -129,7 +128,7 @@ class _KycScreenState extends State<KycScreen> {
         );
       }
     } catch (e) {
-      setState(() => _errorMessage = e.toString());
+      setState(() => _errorMessage = e.toString().replaceFirst('Exception: ', ''));
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -183,12 +182,24 @@ class _KycScreenState extends State<KycScreen> {
                 child: Text(_errorMessage!, style: const TextStyle(color: Colors.red)),
               ),
               
-            Column(
+            Form(
+              key: _formKey,
+              child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 BMoniTextFormField(
                   controller: _bvnCtrl, 
                   label: 'BVN (Use 22222222222 in Sandbox)',
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(11),
+                  ],
+                  validator: (v) {
+                    final t = v?.trim() ?? '';
+                    if (t.length != 11) return 'BVN must be exactly 11 digits';
+                    return null;
+                  },
                 ),
                 if (_isVerifyingBvn)
                   const Padding(
@@ -202,7 +213,7 @@ class _KycScreenState extends State<KycScreen> {
                       children: [
                         const Icon(Icons.check_circle, color: Colors.green, size: 16),
                         const SizedBox(width: 4),
-                        Text('Verified: \$_bvnVerifiedName', style: const TextStyle(color: Colors.green, fontSize: 12, fontWeight: FontWeight.bold)),
+                        Text('Verified: ${_bvnVerifiedName}', style: const TextStyle(color: Colors.green, fontSize: 12, fontWeight: FontWeight.bold)),
                       ],
                     ),
                   )
@@ -219,9 +230,23 @@ class _KycScreenState extends State<KycScreen> {
                   )
               ],
             ),
+            ),
             const SizedBox(height: 16),
             
-            BMoniTextFormField(controller: _ninCtrl, label: 'NIN (11 digits)'),
+            BMoniTextFormField(
+              controller: _ninCtrl,
+              label: 'NIN (11 digits)',
+              keyboardType: TextInputType.number,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(11),
+              ],
+              validator: (v) {
+                final t = v?.trim() ?? '';
+                if (t.length != 11) return 'NIN must be exactly 11 digits';
+                return null;
+              },
+            ),
             const SizedBox(height: 32),
             
             _isLoading

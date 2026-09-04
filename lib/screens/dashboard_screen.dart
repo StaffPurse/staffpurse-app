@@ -11,7 +11,7 @@ import '../env.dart';
 
 import 'card_issuance_screen.dart';
 import 'card_management_screen.dart';
-import 'auth_screen.dart';
+import 'landing_screen.dart';
 import '../services/card_service.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -39,7 +39,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
     Future<void> _pollProvisioning(String userId) async {
-    while (_isProvisioning && mounted) {
+    // Cap at ~90 seconds (30 x 3s) so a stuck provisioning state can't poll
+    // forever and drain the battery.
+    var attempts = 0;
+    while (_isProvisioning && mounted && attempts < 30) {
+      attempts++;
       await Future.delayed(const Duration(seconds: 3));
       if (!mounted) return;
       try {
@@ -53,6 +57,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       } catch (e) {
         // keep polling
       }
+    }
+    // Give up after the cap so the staff list unblocks and cards stay tappable.
+    if (mounted && _isProvisioning) {
+      setState(() => _isProvisioning = false);
     }
   }
 
@@ -130,34 +138,45 @@ class _DashboardScreenState extends State<DashboardScreen> {
           }
         }
 
-        final txRes = await _supabase.from('transaction_cache')
-            .select('*, card_assignment!inner(staff_member!inner(name))')
-            .order('occurred_at', ascending: false)
-            .limit(20);
+        // Transactions are nice-to-have: a failure here (join error, schema
+        // drift) must not blank out the whole dashboard.
+        List<EmbeddedWalletTransaction> mappedTxs = [];
+        try {
+          final txRes = await _supabase.from('transaction_cache')
+              .select('*, card_assignment!inner(staff_member!inner(name))')
+              .order('occurred_at', ascending: false)
+              .limit(20);
 
-        final mappedTxs = txRes.map((tx) {
-          final koboAmount = tx['amount_ngn'] as int? ?? 0;
-          final majorAmount = (koboAmount / 100).toStringAsFixed(2);
-          final staffName = tx['card_assignment']['staff_member']['name'];
+          mappedTxs = txRes.map((tx) {
+            final koboAmount = tx['amount_ngn'] as int? ?? 0;
+            final isDebit = koboAmount < 0;
+            final majorAmount = (koboAmount.abs() / 100).toStringAsFixed(2);
+            final staffName = tx['card_assignment']['staff_member']['name'];
 
-          return EmbeddedWalletTransaction(
-            id: tx['id'],
-            direction: EmbeddedTransactionDirection.outgoing,
-            delta: 'debit',
-            amount: majorAmount,
-            status: EmbeddedWalletTransactionStatus.completed,
-            description: tx['description'] ?? 'Card Spend',
-            title: staffName,
-            createdAt: tx['occurred_at'],
-            currency: 'NGN',
-          );
-        }).toList();
+            return EmbeddedWalletTransaction(
+              id: tx['id'],
+              direction: isDebit
+                  ? EmbeddedTransactionDirection.outgoing
+                  : EmbeddedTransactionDirection.incoming,
+              delta: isDebit ? 'debit' : 'credit',
+              amount: majorAmount,
+              status: EmbeddedWalletTransactionStatus.completed,
+              description: tx['description'] ?? 'Card Spend',
+              title: staffName,
+              createdAt: tx['occurred_at'],
+              currency: 'NGN',
+            );
+          }).toList();
+        } catch (e) {
+          debugPrint('Transaction sync failed: $e');
+        }
 
         double fetchedBalance = 0.0;
         try {
           final balances = await BmoniApi.getBalances(userId: ownerUserId);
           for (var b in balances) {
-            if (b['currency'] == 'CNGN') {
+            final currency = (b['currency'] ?? '').toString();
+            if (currency == 'CNGN' || currency == 'NGN') {
               fetchedBalance = double.tryParse(b['availableBalance']?.toString() ?? b['balance']?.toString() ?? b['amount']?.toString() ?? '0') ?? 0.0;
             }
           }
@@ -234,6 +253,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   textAlign: TextAlign.center,
                   style: TextStyle(color: Colors.grey),
                 ),
+                const SizedBox(height: 24),
+                FilledButton(
+                  onPressed: () {
+                    setState(() => _isLoading = true);
+                    _fetchData();
+                  },
+                  child: const Text('Try Again'),
+                ),
               ],
             ),
           ),
@@ -254,19 +281,31 @@ class _DashboardScreenState extends State<DashboardScreen> {
         title: Text(_business!['name']),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(Icons.account_balance_wallet_outlined),
+            tooltip: 'Fund Wallet',
             onPressed: () {
-              setState(() => _isLoading = true);
-              _fetchData();
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const FundWalletScreen()),
+              ).then((_) => _fetchData());
             },
           ),
           IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh',
+            // Silent refresh: keep the current content on screen while
+            // fetching instead of flashing the full shimmer again.
+            onPressed: _fetchData,
+          ),
+          IconButton(
             icon: const Icon(Icons.logout),
+            tooltip: 'Log Out',
             onPressed: () async {
               await Supabase.instance.client.auth.signOut();
               if (mounted) {
-                Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(builder: (_) => const AuthScreen()),
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (_) => const LandingScreen()),
+                  (route) => false,
                 );
               }
             },
@@ -364,11 +403,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
               emptyState: const Text("No recent transactions"),
               transactions: _transactions,
               itemBuilder: (context, tx) {
+                final isDebit = tx.direction == EmbeddedTransactionDirection.outgoing;
                 return ListTile(
                   leading: const CircleAvatar(child: Icon(Icons.payment)),
                   title: Text(tx.title ?? 'Spend'),
                   subtitle: Text(tx.description ?? ''),
-                  trailing: Text('- ₦${tx.amount}', style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                  trailing: Text(
+                    '${isDebit ? '-' : '+'}₦${tx.amount}',
+                    style: TextStyle(
+                      color: isDebit ? Colors.red : Colors.green,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 );
               },
             ),

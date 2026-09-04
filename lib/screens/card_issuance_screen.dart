@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:bkey_uikit/bkey_uikit.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../services/card_service.dart';
@@ -92,10 +93,9 @@ class _CardIssuanceScreenState extends State<CardIssuanceScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               if (_cardStatus == 'RESERVED') ...[
-                const BMoniInfoCard(
+                const InfoCard(
                   title: 'Card Reserved',
-                  description: 'Awaiting secure signature from device hardware...',
-                  // using basic styling if BMoniInfoCard doesn't exist, wait, uikit has info_card.dart
+                  message: 'Awaiting secure signature from device hardware...',
                 ),
                 const SizedBox(height: 24),
               ],
@@ -107,19 +107,32 @@ class _CardIssuanceScreenState extends State<CardIssuanceScreen> {
                 controller: _staffNameCtrl,
                 label: 'Staff Name',
                 enabled: _cardStatus == 'NOT_ISSUED',
+                validator: (v) => (v == null || v.trim().isEmpty) ? 'Staff name is required' : null,
               ),
               const SizedBox(height: 16),
               BMoniTextFormField(
                 controller: _staffPhoneCtrl,
                 label: 'Staff Phone',
+                keyboardType: TextInputType.phone,
                 enabled: _cardStatus == 'NOT_ISSUED',
+                validator: (v) => (v == null || v.trim().isEmpty) ? 'Phone number is required' : null,
               ),
               const SizedBox(height: 16),
               BMoniTextFormField(
                 controller: _pinCtrl,
                 label: 'Your 6-Digit Owner PIN (to sign)',
                 obscureText: true,
+                keyboardType: TextInputType.number,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(6),
+                ],
                 enabled: _cardStatus == 'NOT_ISSUED',
+                validator: (v) {
+                  final t = v ?? '';
+                  if (t.length != 6) return 'PIN must be exactly 6 digits';
+                  return null;
+                },
               ),
               const SizedBox(height: 32),
               if (_cardStatus == 'NOT_ISSUED' || _cardStatus == 'RESERVED')
@@ -131,28 +144,6 @@ class _CardIssuanceScreenState extends State<CardIssuanceScreen> {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-// A simple fallback widget just in case BMoniInfoCard has a different signature.
-class BMoniInfoCard extends StatelessWidget {
-  final String title;
-  final String description;
-  const BMoniInfoCard({super.key, required this.title, required this.description});
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      color: Colors.amber.shade100,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          Text(description),
-        ],
       ),
     );
   }

@@ -104,6 +104,11 @@ class _CardManagementScreenState extends State<CardManagementScreen> {
         bmoniCardId: widget.bmoniCardId,
       );
       if (mounted) {
+        // The root ScaffoldMessenger survives the pop, so this confirmation
+        // stays visible on the dashboard.
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Staff member removed and card blocked')),
+        );
         Navigator.pop(context); // Go back to dashboard
       }
     } catch (e) {
@@ -119,10 +124,19 @@ class _CardManagementScreenState extends State<CardManagementScreen> {
     setState(() => _isLoading = true);
     HapticFeedback.selectionClick();
     
-    try {
-      final daily = double.parse(_dailyLimitCtrl.text);
-      final tx = double.parse(_txLimitCtrl.text);
+    final daily = double.tryParse(_dailyLimitCtrl.text.trim());
+    final tx = double.tryParse(_txLimitCtrl.text.trim());
+    if (daily == null || tx == null || daily < 0 || tx < 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Enter valid non-negative limits (NGN)'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
 
+    try {
       if (daily > widget.walletBalance) {
         // Edge Case: Setting a limit higher than liquid balance. The provider allows it, 
         // but we should explicitly warn the user.
@@ -181,9 +195,9 @@ class _CardManagementScreenState extends State<CardManagementScreen> {
                 ),
               )
             else
-              BMoniInfoCard(
+              InfoCard(
                 title: 'Card Status: ${_isFrozen ? 'FROZEN' : 'ACTIVE'}',
-                description: 'Freeze to instantly block all transactions.',
+                message: 'Freeze to instantly block all transactions.',
               ),
             
             const SizedBox(height: 16),
@@ -230,28 +244,6 @@ class _CardManagementScreenState extends State<CardManagementScreen> {
           ],
         ),
 
-      ),
-    );
-  }
-}
-
-// A simple fallback widget just in case BMoniInfoCard has a different signature.
-class BMoniInfoCard extends StatelessWidget {
-  final String title;
-  final String description;
-  const BMoniInfoCard({super.key, required this.title, required this.description});
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      color: Colors.blueGrey.shade50,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          Text(description),
-        ],
       ),
     );
   }

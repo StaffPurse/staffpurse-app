@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:bkey_uikit/bkey_uikit.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../services/user_facing_error.dart';
 import 'onboarding_screen.dart';
 import 'dashboard_screen.dart';
 
@@ -41,7 +42,7 @@ class _AuthScreenState extends State<AuthScreen> {
       _checkRoute();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString()), backgroundColor: Colors.red));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(userFacingError(e)), backgroundColor: Colors.red));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);

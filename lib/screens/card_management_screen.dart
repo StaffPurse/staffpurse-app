@@ -4,6 +4,7 @@ import 'package:bkey_uikit/bkey_uikit.dart';
 import 'package:bmoni_embedded_wallets_cards/bmoni_embedded_wallets_cards.dart';
 
 import '../services/card_service.dart';
+import '../services/user_facing_error.dart';
 
 class CardManagementScreen extends StatefulWidget {
   final String ownerUserId;
@@ -74,7 +75,7 @@ class _CardManagementScreenState extends State<CardManagementScreen> {
         setState(() => _isFrozen = originalState);
         HapticFeedback.heavyImpact(); // Alert user of failure
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+          SnackBar(content: Text(userFacingError(e)), backgroundColor: Colors.red),
         );
       }
     }
@@ -113,7 +114,7 @@ class _CardManagementScreenState extends State<CardManagementScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString()), backgroundColor: Colors.red));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(userFacingError(e)), backgroundColor: Colors.red));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -168,7 +169,7 @@ class _CardManagementScreenState extends State<CardManagementScreen> {
       if (mounted) {
         HapticFeedback.heavyImpact();
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+          SnackBar(content: Text(userFacingError(e)), backgroundColor: Colors.red),
         );
       }
     } finally {

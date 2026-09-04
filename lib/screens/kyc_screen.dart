@@ -7,6 +7,8 @@ import 'package:bkey_uikit/bkey_uikit.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../services/onboarding_service.dart';
 import '../services/bmoni_api.dart';
+import '../services/user_facing_error.dart';
+import '../widgets/error_banner.dart';
 import 'dashboard_screen.dart';
 
 class KycScreen extends StatefulWidget {
@@ -85,7 +87,9 @@ class _KycScreenState extends State<KycScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _bvnError = "Invalid BVN or verification failed";
+          _bvnError = e.toString().contains('BVN lookup failed')
+              ? 'Invalid BVN or verification failed'
+              : userFacingError(e, fallback: 'Invalid BVN or verification failed');
         });
       }
     } finally {
@@ -128,7 +132,7 @@ class _KycScreenState extends State<KycScreen> {
         );
       }
     } catch (e) {
-      setState(() => _errorMessage = e.toString().replaceFirst('Exception: ', ''));
+      setState(() => _errorMessage = userFacingError(e));
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -175,12 +179,7 @@ class _KycScreenState extends State<KycScreen> {
             const SizedBox(height: 32),
             
             if (_errorMessage != null)
-              Container(
-                padding: const EdgeInsets.all(12),
-                margin: const EdgeInsets.only(bottom: 24),
-                color: Colors.red.shade100,
-                child: Text(_errorMessage!, style: const TextStyle(color: Colors.red)),
-              ),
+              ErrorBanner(message: _errorMessage!),
               
             Form(
               key: _formKey,

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:bkey_uikit/bkey_uikit.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../services/card_service.dart';
+import '../services/user_facing_error.dart';
 
 class CardIssuanceScreen extends StatefulWidget {
   final String ownerUserId;
@@ -25,7 +26,7 @@ class _CardIssuanceScreenState extends State<CardIssuanceScreen> {
   final _cardService = CardService();
 
   final _staffNameCtrl = TextEditingController();
-  final _staffPhoneCtrl = TextEditingController();
+  final _staffPhoneCtrl = TextEditingController(text: '+234');
   final _pinCtrl = TextEditingController();
 
   bool _isLoading = false;
@@ -54,7 +55,7 @@ class _CardIssuanceScreenState extends State<CardIssuanceScreen> {
         ownerUserId: widget.ownerUserId,
         ownerWalletId: widget.ownerWalletId,
         staffName: _staffNameCtrl.text,
-        staffPhone: _staffPhoneCtrl.text,
+        staffPhone: _staffPhoneCtrl.text.replaceAll(' ', ''),
         pin: _pinCtrl.text,
         nin: nin,
       );
@@ -73,7 +74,7 @@ class _CardIssuanceScreenState extends State<CardIssuanceScreen> {
           _cardStatus = 'NOT_ISSUED';
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+          SnackBar(content: Text(userFacingError(e)), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -114,8 +115,16 @@ class _CardIssuanceScreenState extends State<CardIssuanceScreen> {
                 controller: _staffPhoneCtrl,
                 label: 'Staff Phone',
                 keyboardType: TextInputType.phone,
+                helperText: 'Start with +234 (e.g. +2348012345678)',
                 enabled: _cardStatus == 'NOT_ISSUED',
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Phone number is required' : null,
+                validator: (v) {
+                  final t = (v ?? '').replaceAll(' ', '');
+                  if (t.isEmpty) return 'Phone number is required';
+                  if (!RegExp(r'^\+234\d{10}$').hasMatch(t)) {
+                    return 'Enter as +234 followed by 10 digits';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 16),
               BMoniTextFormField(

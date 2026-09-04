@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:bkey_uikit/bkey_uikit.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/onboarding_service.dart';
+import '../services/user_facing_error.dart';
+import '../widgets/error_banner.dart';
 import 'kyc_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -18,7 +20,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final _firstNameCtrl = TextEditingController();
   final _lastNameCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
-  final _phoneCtrl = TextEditingController();
+  final _phoneCtrl = TextEditingController(text: '+234');
   final _businessNameCtrl = TextEditingController();
   final _pinCtrl = TextEditingController();
 
@@ -48,7 +50,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         firstName: _firstNameCtrl.text,
         lastName: _lastNameCtrl.text,
         email: _emailCtrl.text,
-        phoneNumber: _phoneCtrl.text,
+        phoneNumber: _phoneCtrl.text.replaceAll(' ', ''),
         businessName: _businessNameCtrl.text,
         pin: _pinCtrl.text,
       );
@@ -59,7 +61,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         );
       }
     } catch (e) {
-      setState(() => _errorMessage = e.toString().replaceFirst('Exception: ', ''));
+      setState(() => _errorMessage = userFacingError(e));
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -98,12 +100,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               if (_errorMessage != null)
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  margin: const EdgeInsets.only(bottom: 24),
-                  color: Colors.red.shade100,
-                  child: Text(_errorMessage!, style: const TextStyle(color: Colors.red)),
-                ),
+                ErrorBanner(message: _errorMessage!),
                 
               const Text('Personal Details', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 16),
@@ -131,8 +128,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               const SizedBox(height: 16),
               BMoniTextFormField(
                 controller: _phoneCtrl,
-                label: 'Phone (+234...)',
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+                label: 'Phone',
+                keyboardType: TextInputType.phone,
+                helperText: 'Start with +234 (e.g. +2348012345678)',
+                validator: (v) {
+                  final t = (v ?? '').replaceAll(' ', '');
+                  if (t.isEmpty) return 'Phone number is required';
+                  if (!RegExp(r'^\+234\d{10}$').hasMatch(t)) {
+                    return 'Enter as +234 followed by 10 digits';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 32),
               

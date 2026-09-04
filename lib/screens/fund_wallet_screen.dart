@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:bkey_uikit/bkey_uikit.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/bmoni_api.dart';
+import '../services/user_facing_error.dart';
 
 class FundWalletScreen extends StatefulWidget {
   const FundWalletScreen({super.key});
@@ -45,7 +46,7 @@ class _FundWalletScreenState extends State<FundWalletScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = e.toString();
+          _errorMessage = userFacingError(e);
           _isLoading = false;
         });
       }

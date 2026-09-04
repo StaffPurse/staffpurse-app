@@ -105,7 +105,9 @@ class _FundWalletScreenState extends State<FundWalletScreen> {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 32),
-          
+
+          if (BmoniApi.isSandbox) _buildSandboxNotice(),
+
           _buildDetailRow('Bank Name', bankName),
           const SizedBox(height: 16),
           _buildDetailRow('Account Number', accountNumber, isCopyable: true),
@@ -113,10 +115,76 @@ class _FundWalletScreenState extends State<FundWalletScreen> {
           _buildDetailRow('Account Name', accountName),
           
           const SizedBox(height: 48),
+          if (BmoniApi.isSandbox)
+            const Text(
+              'Your dashboard balance updates automatically once the test credit lands.',
+              style: TextStyle(fontSize: 12, color: Colors.grey, fontStyle: FontStyle.italic),
+              textAlign: TextAlign.center,
+            )
+          else
+            const Text(
+              'Note: Transfers may take up to 5 minutes to reflect in your dashboard balance.',
+              style: TextStyle(fontSize: 12, color: Colors.grey, fontStyle: FontStyle.italic),
+              textAlign: TextAlign.center,
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSandboxNotice() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 24),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.amber.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.amber.shade400),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.science_outlined, color: Colors.amber, size: 20),
+              SizedBox(width: 8),
+              Text(
+                'Sandbox wallet — funded by request',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
           const Text(
-            'Note: Transfers may take up to 5 minutes to reflect in your dashboard balance.',
-            style: TextStyle(fontSize: 12, color: Colors.grey, fontStyle: FontStyle.italic),
-            textAlign: TextAlign.center,
+            'This is a sandbox account, so real bank transfers never arrive and the wallet starts empty. '
+            'To fund it, request BMONI test tokens (\u20A61,000 + \$10) — they credit the wallet manually after you ask.',
+            style: TextStyle(fontSize: 13, height: 1.4),
+          ),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'bkey.mintlify.app/request-test-tokens',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.deepPurple,
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.copy, size: 18, color: Colors.deepPurple),
+                tooltip: 'Copy request link',
+                onPressed: () => _copyToClipboard(
+                    'https://bkey.mintlify.app/request-test-tokens', 'Request link'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Request with the phone number you used to sign up. Credits usually land within one business day.',
+            style: TextStyle(fontSize: 12, color: Colors.grey),
           ),
         ],
       ),

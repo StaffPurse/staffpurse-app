@@ -74,6 +74,8 @@ String userFacingError(Object error, {String? fallback}) {
       raw.contains('active balances') ||
       raw.contains('cannot deactivate')) {
     message = 'Your wallet still has funds. Move the funds out before deleting the account.';
+  } else if (raw.contains('E503') || raw.contains('Insufficient balance')) {
+    message = 'Issuing a card costs a small fee, and this wallet has no funds yet. Open Fund Wallet from the dashboard to request sandbox test funds, then try again.';
   } else if (raw.contains('404') || raw.contains('Not Found')) {
     message = 'That doesn\u2019t exist on the server yet. Try again shortly.';
   } else if (raw.contains('400') ||

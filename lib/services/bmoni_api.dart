@@ -21,6 +21,11 @@ class BmoniApi {
     'x-api-key': Env.bmoniApiKey,
   };
 
+  /// True when pointing at the development/sandbox environment, where wallets
+  /// start empty and test funds are credited manually by BMONI rather than
+  /// arriving via real bank transfers.
+  static bool get isSandbox => Env.bmoniBaseUrl.contains('embedded-dev');
+
   /// Safely unwraps nested objects if the BMONI API returns them.
   static dynamic _unwrapData(dynamic responseBody) {
     if (responseBody is Map) {

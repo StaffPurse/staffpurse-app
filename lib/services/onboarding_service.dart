@@ -26,6 +26,22 @@ class OnboardingService {
         );
       }
 
+      // The BMONI signer native library ships only for 64-bit ARM. On any
+      // other ABI initWallet() throws UnsatisfiedLinkError — an Error the
+      // SDK plugin deliberately lets crash the whole process, which Dart
+      // cannot catch. Fail fast BEFORE any API calls so an unsupported
+      // device gets a readable message and no orphan BMONI user is created.
+      final arch = deviceArch();
+      if (!arch.contains('arm64')) {
+        await CrashLog.write('onboarding: UNSUPPORTED CPU ARCH ($arch) — native signer is arm64-only');
+        throw Exception(
+          'This build of StaffPurse only supports 64-bit ARM devices '
+          '(found: $arch). The BMONI signing library is arm64-only, so wallet '
+          'creation cannot run on this device. Install on an arm64 device or '
+          'ask for a fat-APK build.',
+        );
+      }
+
       // 1. Create User in BMONI
       final bmoniUserId = await BmoniApi.createUserOnly(
         firstName: firstName,
@@ -40,22 +56,6 @@ class OnboardingService {
         await BmoniEmbeddedSdk.setPin(pin);
       }
       await CrashLog.write('onboarding: pin set');
-
-      // The BMONI signer native library ships only for 64-bit ARM. On any
-      // other ABI initWallet() throws UnsatisfiedLinkError — an Error the
-      // SDK plugin deliberately lets crash the whole process, which Dart
-      // cannot catch. Detect the CPU arch up front and fail with a readable,
-      // catchable message instead of force-closing.
-      final arch = deviceArch();
-      if (!arch.contains('arm64')) {
-        await CrashLog.write('onboarding: UNSUPPORTED CPU ARCH ($arch) — native signer is arm64-only');
-        throw Exception(
-          'This build of StaffPurse only supports 64-bit ARM devices '
-          '(found: $arch). The BMONI signing library is arm64-only, so wallet '
-          'creation cannot run on this device. Install on an arm64 device or '
-          'ask for a fat-APK build.',
-        );
-      }
 
       // Distinguish the Dart-side reads from the first NATIVE call
       // (initWallet loads libBMONISignerJNI.so and touches the Keystore).

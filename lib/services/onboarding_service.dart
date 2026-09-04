@@ -1,10 +1,136 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:bmoni_embedded_sdk/bmoni_embedded_sdk.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'bmoni_api.dart';
 import 'crash_log.dart';
 
 class OnboardingService {
   final _supabase = Supabase.instance.client;
+  static const _storage = FlutterSecureStorage();
+
+  static bool _isDuplicateError(Object e) {
+    final raw = e.toString().toLowerCase();
+    return raw.contains('409') ||
+        raw.contains('already exists') ||
+        raw.contains('23505') ||
+        raw.contains('duplicate');
+  }
+
+  /// Creates a BMONI user, or recovers the one a previous failed attempt
+  /// left behind instead of failing with "already registered".
+  ///
+  /// Orphaned users happen whenever the flow dies after user creation but
+  /// before the business row is saved (wrong phone, wallet crash, network
+  /// drop, …). Recovery matches on the Supabase account + email so a retry
+  /// with a corrected phone number keeps working.
+  Future<String> _createOrRecoverBmoniUser({
+    required String firstName,
+    required String lastName,
+    required String email,
+    required String phoneNumber,
+  }) async {
+    // Pre-flight mirrors the UI validator: a malformed phone must never
+    // create a user we can't link to anything.
+    final cleanPhone = phoneNumber.replaceAll(' ', '');
+    if (!RegExp(r'^\+234\d{10}$').hasMatch(cleanPhone)) {
+      throw Exception('Phone must be in +234 format, e.g. +2348012345678');
+    }
+
+    final supabaseUid = _supabase.auth.currentUser?.id ?? '';
+    try {
+      final id = await BmoniApi.createUserOnly(
+        firstName: firstName,
+        lastName: lastName,
+        email: email,
+        phoneNumber: cleanPhone,
+      );
+      await _persistBmoniUser(id, email, cleanPhone, supabaseUid);
+      await CrashLog.write('onboarding: BMONI user created ($id)');
+      return id;
+    } on Exception catch (e) {
+      if (!_isDuplicateError(e)) rethrow;
+
+      // A previous attempt on this device already created the user. Reuse it
+      // if it belongs to this Supabase account and email (the phone may have
+      // been corrected between attempts).
+      final storedId = await _storage.read(key: 'owner_bmoni_user_id');
+      final storedEmail = (await _storage.read(key: 'owner_bmoni_email'))?.toLowerCase();
+      final storedUid = await _storage.read(key: 'owner_supabase_uid');
+      if (storedId != null && storedId.isNotEmpty &&
+          storedUid == supabaseUid &&
+          storedEmail == email.toLowerCase()) {
+        await CrashLog.write('onboarding: recovered existing BMONI user ($storedId)');
+        return storedId;
+      }
+
+      // The duplicate response usually names the existing user — take it.
+      final existingId = RegExp(
+        r'[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}',
+      ).firstMatch(e.toString())?.group(0);
+      if (existingId != null) {
+        await _persistBmoniUser(existingId, email, cleanPhone, supabaseUid);
+        await CrashLog.write('onboarding: recovered BMONI user from response ($existingId)');
+        return existingId;
+      }
+
+      throw Exception(
+        'This email or phone is already registered on another account. '
+        'Use a different email and phone to create a new account, or log in '
+        'if you already completed setup.',
+      );
+    }
+  }
+
+  Future<void> _persistBmoniUser(
+    String userId,
+    String email,
+    String phone,
+    String supabaseUid,
+  ) async {
+    await _storage.write(key: 'owner_bmoni_user_id', value: userId);
+    await _storage.write(key: 'owner_bmoni_email', value: email.toLowerCase());
+    await _storage.write(key: 'owner_bmoni_phone', value: phone);
+    await _storage.write(key: 'owner_supabase_uid', value: supabaseUid);
+  }
+
+  /// Best-effort lookup of an existing smart wallet when registration reports
+  /// a duplicate (a previous attempt created it but the flow died).
+  Future<String?> _recoverWalletId(String bmoniUserId) async {
+    try {
+      final status = await BmoniApi.getOnboardingStatus(userId: bmoniUserId);
+      String? found;
+      void walk(dynamic node) {
+        if (found != null) return;
+        if (node is Map) {
+          for (final entry in node.entries) {
+            final key = entry.key.toString().toLowerCase();
+            if ((key.contains('wallet') && key.contains('id')) ||
+                key == 'smartwalletid' ||
+                key == 'walletid') {
+              final value = entry.value?.toString() ?? '';
+              if (value.isNotEmpty && value != 'null') {
+                found = value;
+                return;
+              }
+            }
+            walk(entry.value);
+          }
+        } else if (node is List) {
+          for (final item in node) {
+            walk(item);
+          }
+        }
+      }
+
+      walk(status);
+      if (found != null) {
+        await CrashLog.write('onboarding: recovered existing smart wallet ($found)');
+      }
+      return found;
+    } catch (e) {
+      return null;
+    }
+  }
 
   // Stage 1 & 2: Create User & Provision Smart Wallet
   Future<Map<String, String>> setupProfileAndWallet({
@@ -42,14 +168,13 @@ class OnboardingService {
         );
       }
 
-      // 1. Create User in BMONI
-      final bmoniUserId = await BmoniApi.createUserOnly(
+      // 1. Create (or recover) the BMONI user
+      final bmoniUserId = await _createOrRecoverBmoniUser(
         firstName: firstName,
         lastName: lastName,
         email: email,
         phoneNumber: phoneNumber,
       );
-      await CrashLog.write('onboarding: user created ($bmoniUserId)');
 
       // 2. Set Wallet PIN and Provision Wallet on-device
       if (!await BmoniEmbeddedSdk.hasPin()) {
@@ -107,34 +232,77 @@ class OnboardingService {
       final signature = await BmoniEmbeddedSdk.signMessage(eip191Message, pin: pin);
       await CrashLog.write('onboarding: owner-proof challenge signed');
 
-      final walletResult = await BmoniApi.createManagedWallet(
-        userId: bmoniUserId,
-        userOwnerAddress: userOwnerAddress,
-        challengeId: challenge['challengeId'],
-        signature: signature,
-      );
+      // A previous attempt may have already registered this wallet — recover
+      // its ID instead of failing the whole onboarding again.
+      Map<String, dynamic> walletResult;
+      try {
+        walletResult = await BmoniApi.createManagedWallet(
+          userId: bmoniUserId,
+          userOwnerAddress: userOwnerAddress,
+          challengeId: challenge['challengeId'],
+          signature: signature,
+        );
+      } catch (e) {
+        if (!_isDuplicateError(e)) rethrow;
+        final existingWalletId = await _recoverWalletId(bmoniUserId);
+        if (existingWalletId == null) rethrow;
+        walletResult = {'id': existingWalletId};
+      }
       final smartWalletId = walletResult['id'];
       await CrashLog.write('onboarding: smart wallet registered ($smartWalletId)');
 
-      // 4. Save Business mapping to Supabase
+      // 4. Save Business mapping to Supabase (idempotent: a lost response on
+      //    a previous attempt must not block the retry).
       final userId = _supabase.auth.currentUser!.id;
-      await _supabase.from('business').insert({
-        'owner_id': userId,
-        'owner_bmoni_user_id': bmoniUserId,
-        'owner_wallet_id': smartWalletId,
-        'name': businessName,
-      });
+      String savedBmoniUserId = bmoniUserId;
+      String savedWalletId = smartWalletId;
+      try {
+        await _supabase.from('business').insert({
+          'owner_id': userId,
+          'owner_bmoni_user_id': bmoniUserId,
+          'owner_wallet_id': smartWalletId,
+          'name': businessName,
+        });
+      } catch (e) {
+        if (!_isDuplicateError(e)) rethrow;
+        final existing = await _supabase
+            .from('business')
+            .select('owner_wallet_id, owner_bmoni_user_id')
+            .eq('owner_id', userId)
+            .maybeSingle();
+        if (existing == null) rethrow;
+        final existingWallet = existing['owner_wallet_id'];
+        if (existingWallet == null ||
+            existingWallet == 'PENDING_DEVICE_PROVISIONING') {
+          // Placeholder row (e.g. from the prewarm script): fill in the real
+          // wallet details instead of treating it as already done.
+          await _supabase.from('business').update({
+            'owner_bmoni_user_id': bmoniUserId,
+            'owner_wallet_id': smartWalletId,
+            'name': businessName,
+          }).eq('owner_id', userId);
+          await CrashLog.write('onboarding: upgraded placeholder business row');
+        } else {
+          savedBmoniUserId = existing['owner_bmoni_user_id'] ?? bmoniUserId;
+          savedWalletId = existingWallet;
+          await CrashLog.write('onboarding: business row already existed, continuing');
+        }
+      }
       await CrashLog.write('onboarding: business row saved');
 
       return {
-        'bmoniUserId': bmoniUserId,
-        'smartWalletId': smartWalletId,
+        'bmoniUserId': savedBmoniUserId,
+        'smartWalletId': savedWalletId,
         'userOwnerAddress': userOwnerAddress,
       };
     } catch (e) {
       await CrashLog.write('onboarding: FAILED -> $e');
-      if (e.toString().contains('409') || e.toString().toLowerCase().contains('already exists')) {
-        throw Exception('This phone or email is already registered with BMONI.\n\nIf you already have an account, please click the Log Out button in the top right, then Login with your existing credentials instead of creating a new one.');
+      if (_isDuplicateError(e)) {
+        throw Exception(
+          'This email or phone is already registered on another account. '
+          'Use a different email and phone to create a new account, or log in '
+          'if you already completed setup.',
+        );
       }
       throw Exception('Setup failed: $e');
     }
@@ -150,13 +318,20 @@ class OnboardingService {
       final userOwnerAddress = (await BmoniEmbeddedSdk.walletAddress())!;
       await CrashLog.write('kyc: activating rail for $bmoniUserId');
 
-      // Start Nigeria Onboarding (Auto-verifies BVN and provisions NGN rail)
-      await BmoniApi.startNigeriaOnboarding(
-        userId: bmoniUserId,
-        bvn: bvn,
-        ngnWalletAddress: userOwnerAddress,
-        ngnWalletIndex: 0,
-      );
+      // Start Nigeria Onboarding (Auto-verifies BVN and provisions NGN rail).
+      // If a previous attempt already kicked it off, treat that as success —
+      // the dashboard's status poll handles the wait.
+      try {
+        await BmoniApi.startNigeriaOnboarding(
+          userId: bmoniUserId,
+          bvn: bvn,
+          ngnWalletAddress: userOwnerAddress,
+          ngnWalletIndex: 0,
+        );
+      } catch (e) {
+        if (!_isDuplicateError(e)) rethrow;
+        await CrashLog.write('kyc: rail activation already in progress, continuing');
+      }
       await CrashLog.write('kyc: rail activation submitted');
     } catch (e) {
       await CrashLog.write('kyc: FAILED -> $e');

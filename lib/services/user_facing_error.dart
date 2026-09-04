@@ -9,10 +9,12 @@ import 'crash_log.dart';
 
 /// Phrases our own code already throws that are fine to show the user as-is.
 const List<String> _friendlyPrefixes = [
+  'This email or phone is already registered',
   'This phone or email is already registered',
   'This build of StaffPurse',
   'PIN must be exactly 6 digits',
   'Enter valid non-negative limits',
+  'Phone must be in +234 format',
 ];
 
 /// Converts any thrown object into a short, human-friendly message.
@@ -24,7 +26,11 @@ String userFacingError(Object error, {String? fallback}) {
   final raw = error.toString();
 
   for (final p in _friendlyPrefixes) {
-    if (raw.contains(p)) return raw.replaceFirst('Exception: ', '');
+    if (raw.contains(p)) {
+      return raw
+          .replaceFirst('Exception: ', '')
+          .replaceFirst('Setup failed: ', '');
+    }
   }
 
   String message;
@@ -49,10 +55,12 @@ String userFacingError(Object error, {String? fallback}) {
       raw.contains('timed out') ||
       raw.contains('TimeoutException')) {
     message = 'The server took too long to respond. Please try again.';
-  } else if (raw.contains('already exists') ||
+  } else if (raw.contains('already registered') ||
+      raw.contains('user_already_exists') ||
+      raw.contains('already exists') ||
       raw.contains('409') ||
       raw.contains('23505')) {
-    message = 'This phone or email is already registered. Log out and sign in instead.';
+    message = 'This email or phone is already registered on another account. Use a different email and phone, or log in if you already completed setup.';
   } else if (raw.contains('401') ||
       raw.contains('Unauthorized') ||
       raw.contains('403')) {

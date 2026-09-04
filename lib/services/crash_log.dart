@@ -11,7 +11,9 @@ import 'package:path_provider/path_provider.dart';
 /// the cheapest way to diagnose that — no adb required.
 String deviceArch() {
   final v = Platform.version;
-  final m = RegExp(r"on '([^']+)'").firstMatch(v);
+  // Platform.version reports the target arch as `on 'android_arm64'` or
+  // `on "android_arm"` — the quote style varies across Dart versions.
+  final m = RegExp(r"on ['"]([^'"]+)['"]").firstMatch(v);
   return m != null ? m.group(1)! : v;
 }
 

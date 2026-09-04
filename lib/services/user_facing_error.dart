@@ -25,6 +25,11 @@ const List<String> _friendlyPrefixes = [
 String userFacingError(Object error, {String? fallback}) {
   final raw = error.toString();
 
+  // Always record the technical detail before mapping — even errors that are
+  // safe to show as-is (early return below) must stay diagnosable from the
+  // on-device log.
+  CrashLog.write('RAW ERROR: $raw');
+
   for (final p in _friendlyPrefixes) {
     if (raw.contains(p)) {
       return raw
@@ -92,6 +97,5 @@ String userFacingError(Object error, {String? fallback}) {
     message = fallback ?? 'Something went wrong. Please try again.';
   }
 
-  CrashLog.write('RAW ERROR: $raw');
   return message;
 }

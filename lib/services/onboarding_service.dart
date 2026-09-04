@@ -51,14 +51,17 @@ class OnboardingService {
       if (!_isDuplicateError(e)) rethrow;
 
       // A previous attempt on this device already created the user. Reuse it
-      // if it belongs to this Supabase account and email (the phone may have
-      // been corrected between attempts).
+      // if it belongs to this Supabase account on this device — the email or
+      // phone may have been corrected between attempts, and requiring an exact
+      // email match is what burned emails in earlier versions. The keys live in
+      // per-install secure storage, so an orphan stored under the same Supabase
+      // account almost certainly belongs to this onboarding attempt.
       final storedId = await _storage.read(key: 'owner_bmoni_user_id');
-      final storedEmail = (await _storage.read(key: 'owner_bmoni_email'))?.toLowerCase();
       final storedUid = await _storage.read(key: 'owner_supabase_uid');
-      if (storedId != null && storedId.isNotEmpty &&
-          storedUid == supabaseUid &&
-          storedEmail == email.toLowerCase()) {
+      if (storedId != null && storedId.isNotEmpty && storedUid == supabaseUid) {
+        await CrashLog.write(
+          'onboarding: adopting stored orphan user ($storedId) for this account',
+        );
         return _adoptExistingUser(storedId, email, cleanPhone, supabaseUid);
       }
 
@@ -240,7 +243,13 @@ class OnboardingService {
         userId: bmoniUserId,
         userOwnerAddress: userOwnerAddress,
       );
-      final eip191Message = challenge['eip191Message'] as String?;
+      // The live sandbox returns the signable text under `message` — the
+      // canonical integration example signs `challenge.message`. (`eip191Message`
+      // was an earlier assumed field name that the API never returned.)
+      final rawChallengeMessage =
+          challenge['eip191Message'] ?? challenge['message'];
+      final eip191Message =
+          rawChallengeMessage is String ? rawChallengeMessage : null;
       if (eip191Message == null || eip191Message.isEmpty) {
         throw Exception(
           'BMONI did not return an EIP-191 challenge message: $challenge',

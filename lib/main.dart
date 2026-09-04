@@ -14,6 +14,11 @@ import 'screens/dashboard_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Record the device CPU architecture at startup — the BMONI signer lib is
+  // arm64-only, so this single line in the Diagnostics screen answers the
+  // most likely crash cause without adb.
+  CrashLog.write('app started | device arch: ${deviceArch()}');
+
   // Capture any Dart-level error (widget builds, platform channel callbacks)
   // into the on-device crash log so failures survive a force-close.
   FlutterError.onError = (FlutterErrorDetails details) {

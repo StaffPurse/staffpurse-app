@@ -2,6 +2,19 @@ import 'dart:io';
 
 import 'package:path_provider/path_provider.dart';
 
+/// Returns the Dart VM's target CPU architecture as reported in
+/// Platform.version, e.g. 'android_arm64', 'android_x64', 'android_arm'.
+///
+/// The BMONI signer native library (libBMONISignerJNI.so) ships only for
+/// arm64-v8a, so on any other ABI the SDK throws an uncatchable
+/// UnsatisfiedLinkError that kills the process. Knowing the arch in-app is
+/// the cheapest way to diagnose that — no adb required.
+String deviceArch() {
+  final v = Platform.version;
+  final m = RegExp(r"on '([^']+)'").firstMatch(v);
+  return m != null ? m.group(1)! : v;
+}
+
 /// Minimal on-device diagnostics log.
 ///
 /// Writes a timestamped trace of onboarding steps and any Dart-level errors

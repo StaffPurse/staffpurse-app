@@ -316,3 +316,14 @@ review — everything in §5.2–5.4 above reflects this, not assumption):
    pattern from step 2 is established, since it's the same PIN-signing pattern repeated)
 5. Demo script rehearsal with a **pre-warmed** business/wallet/card set — don't do first-time
    provisioning live on stage; that's where sandbox latency or flakiness will hurt you most
+
+---
+
+## 10. Transparency Layer Architecture (Soroban Anchoring)
+- **Edge Functions (Anchoring Job)**: Supabase Edge Functions run a daily cron job to build a Merkle tree of daily records and submit the root to the Stellar network (Soroban).
+- **Blockchain Anchoring Tech Stack**: `@stellar/stellar-sdk` running in a Node.js/Deno Edge Function environment.
+- **Daily Batching Flow**:
+  1. Retrieves all `spend_records` created since the last batch.
+  2. Constructs a Merkle tree from the hashes of these records and saves the `merkle_proof` back to the database.
+  3. Signs a transaction using a service-owned Stellar keypair (business owners do not manage Stellar keys) and submits the `root` (32 bytes) and `batch_date` to the Soroban anchoring contract.
+  4. Includes retry/backoff logic to handle Soroban submission failures gracefully.

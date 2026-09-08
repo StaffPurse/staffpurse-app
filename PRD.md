@@ -99,3 +99,10 @@ Still open:
   this before building the funding assumption into the demo.
 - Confirm sandbox test BVN, test NIN, and test funding actually work the day before —
   hackathon sandbox environments are the most common source of last-minute demo failure.
+
+---
+
+## 8. Transparency Layer (Drips Wave Program)
+While the core app handles spend management and virtual card issuance via the BMONI SDK, it also includes a transparency layer (the anchoring job) that aggregates daily spend records and anchors a Merkle root to the Stellar blockchain for verifiable auditing.
+- **Daily Anchoring Job**: A backend cron job aggregates all new spend records daily, constructs a Merkle tree of the records, and submits the resulting Merkle root to the `staffpurse-contracts` Soroban smart contract.
+- **Zero Raw Data On-Chain**: The daily batching job must only ever anchor cryptographic hashes to the blockchain, ensuring no PII or raw transaction data is exposed.

@@ -1,82 +1,53 @@
-# StaffPurse
+<div align="center">
+  <!-- 🖼️ Banner/Logo Placeholder -->
+  <img src="https://via.placeholder.com/800x200/1e1e2e/a6accd?text=StaffPurse+staffpurse-app" alt="📱 StaffPurse App Banner" width="100%" />
 
-> Spend control for Nigeria's informal micro-businesses — issue capped virtual cards to staff, freeze instantly, see spend live. 
-> Built on **BMONI** for the "Hack the Future" Hackathon.
+  <h1>📱 StaffPurse App</h1>
+  <p><strong>Mobile app and backend anchoring job for StaffPurse spend management.</strong></p>
 
-StaffPurse allows business owners to instantly issue secure virtual spend cards to their staff without the friction of formal business registration or complex multi-tier banking approvals. 
+  <p>
+    <img src="https://img.shields.io/github/actions/workflow/status/StaffPurse/staffpurse-app/edge-ci.yml?branch=main" alt="CI Status" />
+    <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License" />
+  </p>
 
-By leveraging the BMONI Embedded SDK and Smart Wallets, StaffPurse owners retain complete self-custody of their main balance while instantly delegating capped NGN spending power to their team.
+  <p>
+    <a href="https://staffpurse.gitbook.io"><strong>Documentation</strong></a> ·
+    <a href="https://t.me/+Gflo5jZStw1jMjE0"><strong>Community Telegram</strong></a>
+  </p>
+</div>
 
----
+## 📖 Overview
 
-## 🛠 Tech Stack
+A spend control platform for Nigeria's informal micro-businesses allowing instant virtual card issuance. This repository houses the main Flutter mobile application (powered by BMONI) as well as the backend Edge Functions that aggregate and anchor daily spend proofs to the Stellar blockchain.
 
-- **Frontend:** Flutter (Mobile only, enforced by hardware keystore requirements)
-- **State Management:** Riverpod
-- **Backend / Database:** Supabase (PostgreSQL)
-- **Infrastructure / Finance:** 
-  - `bmoni_embedded_sdk` (Hardware secure enclave Keystore & EIP-191 signing)
-  - `bmoni_embedded_wallets_cards` (Card Widgets)
-  - `bkey_uikit` (BMONI Design System & Typography)
+## 🏗 Architecture
 
----
+The **Flutter client** enforces self-custody via secure hardware-enclaves for EIP-191 signing. The backend uses **Supabase (PostgreSQL)** for off-chain record keeping, while **Deno Edge Functions** execute daily cron jobs to build Merkle trees and submit them to the Soroban RPC.
 
-## 🚀 Getting Started
+## 🚀 Quick Start
 
-Because StaffPurse relies on the BMONI Embedded SDK which interacts directly with the **Android Keystore** and **iOS Secure Enclave**, this application **cannot be run on Web or Desktop**. You must run it on a physical device or a mobile emulator.
-
-### 1. Prerequisites
-- [Flutter SDK](https://docs.flutter.dev/get-started/install) (v3.13+)
-- Android Studio (for the Android Emulator) or Xcode
-- A [Supabase](https://supabase.com/) Project
-- A BMONI Sandbox API Key
-
-### 2. Environment Setup
-Create or update `lib/env.dart` with your Sandbox and Database keys:
-```dart
-class Env {
-  static const String supabaseUrl = 'https://YOUR_PROJECT.supabase.co';
-  static const String supabaseAnonKey = 'eyJ...';
-  static const String bmoniBaseUrl = 'https://embedded-dev.bmoni.com/v1';
-  static const String bmoniApiKey = 'pk_...'; 
-}
-```
-
-### 3. Database Schema
-Push the Supabase schema directly to your live project:
 ```bash
-supabase db push
-```
-*(This sets up the `business`, `staff_member`, `card_assignment`, and `transaction_cache` tables).*
-
-### 4. Run the App
-Connect your Android Emulator or iOS Simulator, then:
-```bash
+# 1. Start the Flutter Mobile App
 flutter pub get
 flutter run
+
+# 2. Run the Backend Edge Functions locally
+supabase start
+supabase functions serve
 ```
 
----
+## 🤝 Contributing
 
-## 🧪 Demo Pre-warm Script
+Please read our [Contributing Guidelines](CONTRIBUTING.md) and [Security Policy](SECURITY.md) before submitting pull requests. All PRs must pass the CI gates and follow our code quality standards.
 
-To avoid live-demo friction, you can "pre-warm" the sandbox environment with a mock business and staff members before stepping on stage.
+## 👥 Maintainers
 
-```bash
-# Export your keys
-export SUPABASE_URL="https://YOUR_PROJECT.supabase.co"
-export SUPABASE_KEY="eyJ..."
-export BMONI_API_KEY="pk_..."
+| Name | Contact | Role |
+| :--- | :--- | :--- |
+| Ademola | [Telegram](https://t.me/placeholder) | Core Maintainer |
 
-# Run the Dart pre-warm script
-dart run scripts/prewarm_sandbox.dart
-```
+## ✨ Contributors
 
-**Note on Cryptography:** 
-The pre-warm script sets up the BMONI user and Supabase database relationships. However, **it cannot issue the virtual cards**. BMONI card issuance proposals *must* be signed by the smart wallet's secp256k1 private key, which is locked safely inside your mobile device's Secure Enclave. To finish the pre-warm, open the Flutter app on your emulator and tap **"Issue Card"**!
-
----
-
-## 🏗 Architecture Reference
-- Read [ARCHITECTURE.md](ARCHITECTURE.md) for data flow and structural decisions.
-- Read [PRD.md](PRD.md) for product scope and target demographics.
+<a href="https://github.com/StaffPurse/staffpurse-app/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=StaffPurse/staffpurse-app" alt="Contributors" />
+</a>

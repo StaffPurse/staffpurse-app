@@ -1,0 +1,14 @@
+name: Auto-Add to Project
+on:
+  issues:
+    types:
+      - opened
+jobs:
+  add:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add Issue to Project
+        env:
+          GH_TOKEN: ${{ secrets.ORG_PROJECT_TOKEN }}
+        run: |
+          gh project item-add 1 --owner StaffPurse --url ${{ github.event.issue.html_url }}

@@ -2,7 +2,7 @@
   <!-- 🖼️ Banner/Logo Placeholder -->
   <img src="https://via.placeholder.com/800x200/1e1e2e/a6accd?text=StaffPurse+staffpurse-app" alt="" width="100%" />
 
-  <h1>📱 StaffPurse App</h1>
+  <h1>StaffPurse App</h1>
   <p><strong>Mobile app and backend anchoring job for StaffPurse spend management.</strong></p>
 
   <p>

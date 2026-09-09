@@ -1,0 +1,35 @@
+name: Scheduled Batch Anchoring
+
+on:
+  schedule:
+    # Runs daily at 00:05 UTC as an external cron trigger backup
+    - cron: '5 0 * * *'
+  workflow_dispatch:
+    inputs:
+      batch_date:
+        description: 'Target batch date (YYYY-MM-DD)'
+        required: false
+
+jobs:
+  trigger-anchor-batch:
+    name: Invoke Anchor Batch Edge Function
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Edge Function
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          BATCH_DATE: ${{ github.event.inputs.batch_date }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+            echo "Secrets SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY not configured. Skipping automated call."
+            exit 0
+          fi
+
+          TARGET_DATE=${BATCH_DATE:-$(date -u -d "yesterday" +"%Y-%m-%d" 2>/dev/null || date -u -v-1d +"%Y-%m-%d")}
+          echo "Triggering anchor-batch for date: $TARGET_DATE"
+
+          curl -s -f -X POST "${SUPABASE_URL}/functions/v1/anchor-batch" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
+            -d "{\"trigger\":\"github_actions_cron\",\"batch_date\":\"${TARGET_DATE}\"}"

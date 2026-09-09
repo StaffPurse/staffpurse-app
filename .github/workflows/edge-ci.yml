@@ -1,0 +1,46 @@
+name: Supabase Edge Functions CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/functions/**'
+      - '.github/workflows/edge-ci.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'supabase/functions/**'
+      - '.github/workflows/edge-ci.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-edge-functions:
+    name: Lint & Test Edge Functions
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.x
+
+      - name: Verify Deno lint
+        run: |
+          if [ -d "supabase/functions" ]; then
+            deno lint supabase/functions/
+          else
+            echo "supabase/functions directory not found, skipping lint."
+          fi
+
+      - name: Run Deno tests
+        run: |
+          if [ -d "supabase/functions" ]; then
+            deno test --allow-all supabase/functions/
+          else
+            echo "supabase/functions directory not found, skipping tests."
+          fi

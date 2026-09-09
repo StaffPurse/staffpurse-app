@@ -327,3 +327,41 @@ review — everything in §5.2–5.4 above reflects this, not assumption):
   2. Constructs a Merkle tree from the hashes of these records and saves the `merkle_proof` back to the database.
   3. Signs a transaction using a service-owned Stellar keypair (business owners do not manage Stellar keys) and submits the `root` (32 bytes) and `batch_date` to the Soroban anchoring contract.
   4. Includes retry/backoff logic to handle Soroban submission failures gracefully.
+
+---
+
+## 11. End-to-End Service Topology Diagram
+
+The following diagram illustrates the complete runtime topology across client applications, backend data layers, the batching indexer, and the Stellar Soroban blockchain:
+
+```mermaid
+flowchart TD
+    subgraph Clients["User & Client Layer"]
+        Mobile["📱 Flutter Mobile App (Owner & Staff)"]
+        WebDashboard["💻 Next.js Verification Dashboard (Public / Auditor)"]
+    end
+
+    subgraph Backend["Data & Processing Layer (Supabase)"]
+        DB[(🗄️ PostgreSQL Database\n- Businesses & Staff\n- Spend Records & Proofs\n- Dead Letter Queue)]
+        EdgeFunc["⚡ Supabase Edge Function\n`anchor-batch`\n(Deno / @stellar/stellar-sdk)"]
+        CronTrigger["⏰ Scheduler / Cron\n(pg_cron / pg_net @ 00:05 UTC)"]
+    end
+
+    subgraph Blockchain["Stellar Network (Soroban)"]
+        SorobanRPC["🌐 Stellar Soroban RPC\n(Testnet / Mainnet)"]
+        AnchorContract["📜 Anchoring Smart Contract\n`staffpurse-contracts`\n`anchor_root(root, batch_date)`"]
+    end
+
+    %% Client Interactions
+    Mobile -->|"1. Record spend / View cards"| DB
+    CronTrigger -->|"2. Scheduled daily trigger"| EdgeFunc
+    EdgeFunc -->|"3. Query daily spend records"| DB
+    EdgeFunc -->|"4. Compute Merkle tree & store proofs"| DB
+    EdgeFunc -->|"5. Sign & submit root (Service Keypair)"| SorobanRPC
+    SorobanRPC -->|"6. State commit"| AnchorContract
+
+    %% Verification Flow
+    WebDashboard -->|"A. Fetch records & Merkle proofs"| DB
+    WebDashboard -->|"B. Query get_root(batch_date)"| SorobanRPC
+    WebDashboard -->|"C. Verify leaf against root client-side"| WebDashboard
+```

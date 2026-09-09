@@ -1,6 +1,7 @@
 import 'fund_wallet_screen.dart';
 import '../services/bmoni_api.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:bkey_uikit/bkey_uikit.dart';
 import 'package:bmoni_embedded_wallets_cards/bmoni_embedded_wallets_cards.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -452,29 +453,124 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             
             const SizedBox(height: 32),
-            EmbeddedWalletTransactionsSection(
-              title: "Recent Staff Spending",
-              emptyState: const Text("No recent transactions"),
-              transactions: _transactions,
-              itemBuilder: (context, tx) {
-                final isDebit = tx.direction == EmbeddedTransactionDirection.outgoing;
-                return ListTile(
-                  leading: const CircleAvatar(child: Icon(Icons.payment)),
-                  title: Text(tx.title ?? 'Spend'),
-                  subtitle: Text(tx.description ?? ''),
-                  trailing: Text(
-                    '${isDebit ? '-' : '+'}₦${tx.amount}',
-                    style: TextStyle(
-                      color: isDebit ? Colors.red : Colors.green,
-                      fontWeight: FontWeight.bold,
+             EmbeddedWalletTransactionsSection(
+               title: "Recent Staff Spending",
+               emptyState: const Text("No recent transactions"),
+               transactions: _transactions,
+               itemBuilder: (context, tx) {
+                 final isDebit = tx.direction == EmbeddedTransactionDirection.outgoing;
+                 return ListTile(
+                   leading: const CircleAvatar(child: Icon(Icons.payment)),
+                   title: Text(tx.title ?? 'Spend'),
+                   subtitle: Text(tx.description ?? ''),
+                   trailing: Text(
+                     '${isDebit ? '-' : '+'}₦${tx.amount}',
+                     style: TextStyle(
+                       color: isDebit ? Colors.red : Colors.green,
+                       fontWeight: FontWeight.bold,
+                     ),
+                   ),
+                   onTap: () => _showTransactionDetails(context, tx),
+                 );
+               },
+             ),
+           ],
+         ),
+       ),
+     );
+   }
+
+  void _showTransactionDetails(BuildContext context, EmbeddedWalletTransaction tx) {
+    final isDebit = tx.direction == EmbeddedTransactionDirection.outgoing;
+    final txRef = tx.id.isNotEmpty ? tx.id : 'tx_pending';
+    final verificationUrl = Uri.parse('https://verify.staffpurse.com?tx=$txRef');
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    tx.title ?? 'Transaction Details',
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                '${isDebit ? '-' : '+'}₦${tx.amount}',
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: isDebit ? Colors.red : Colors.green,
+                ),
+              ),
+              if (tx.description != null && tx.description!.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text(
+                  tx.description!,
+                  style: const TextStyle(color: Colors.grey),
+                ),
+              ],
+              const SizedBox(height: 16),
+              const Divider(),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  const Icon(Icons.verified_user_outlined, size: 20, color: Colors.blueAccent),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Reference: ${txRef.length > 16 ? "${txRef.substring(0, 16)}..." : txRef}',
+                    style: const TextStyle(fontSize: 13, color: Colors.black87),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    if (await canLaunchUrl(verificationUrl)) {
+                      await launchUrl(verificationUrl, mode: LaunchMode.externalApplication);
+                    } else {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Could not open verification link')),
+                        );
+                      }
+                    }
+                  },
+                  icon: const Icon(Icons.open_in_new, size: 18),
+                  label: const Text('Verify on Stellar (Soroban)'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blueAccent,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+          ),
+        );
+      },
     );
   }
 }

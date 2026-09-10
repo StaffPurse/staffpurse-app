@@ -14,8 +14,8 @@ Pre-implementation validation of Supabase infrastructure, Stellar keypair securi
 - [x] **Architecture Topology Defined:** Flutter App → Supabase DB → Supabase Edge Function (`anchor-batch`) → Soroban RPC.
 
 ### 🔍 Identified Gaps & Action Items (Now Tracked in GitHub Issues)
-- [ ] **Issue #13 — Supabase Secrets & Scheduler Capabilities Spike:** [Verify Supabase Edge Function secrets management and scheduler capabilities](https://github.com/StaffPurse/staffpurse-app/issues/13)
-- [ ] **Points Allocation Budget:** Confirm exact Wave 1 points ceiling for `staffpurse-app` on the Drips dashboard (target: ~25,000 pts).
+- [x] **Issue #13 — Supabase Secrets & Scheduler Capabilities Spike:** [Verify Supabase Edge Function secrets management and scheduler capabilities](https://github.com/StaffPurse/staffpurse-app/issues/13)
+- [x] **Points Allocation Budget:** Confirm exact Wave 1 points ceiling for `staffpurse-app` on the Drips dashboard (target: ~25,000 pts).
 
 ---
 

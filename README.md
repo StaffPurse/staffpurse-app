@@ -40,5 +40,5 @@ Please read our [Contributing Guidelines](CONTRIBUTING.md) and [Security Policy]
 ## ✨ Contributors
 
 <a href="https://github.com/StaffPurse/staffpurse-app/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=StaffPurse/staffpurse-app" alt="Contributors" />
+  <img src="https://contrib.rocks/image?repo=StaffPurse/staffpurse-app&v=1" alt="Contributors" />
 </a>

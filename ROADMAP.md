@@ -25,18 +25,18 @@ Requirements to clean up hackathon debris, structure the Supabase batching pipel
 
 ### 📋 Current Work (Tracked in GitHub Issues)
 - [x] **Issue #1 — Security & Service Topology:** [Add SECURITY.md and Explicit Topology Diagram](https://github.com/StaffPurse/staffpurse-app/issues/1) ✅ *(Completed by @mallison031)*
-- [ ] **Issue #2 — Edge Function Scaffolding:** [Scaffold Supabase Edge Function for daily batching](https://github.com/StaffPurse/staffpurse-app/issues/2)
+- [x] **Issue #2 — Edge Function Scaffolding:** [Scaffold Supabase Edge Function for daily batching](https://github.com/StaffPurse/staffpurse-app/issues/2)
 - [x] **Issue #3 — Merkle Tree Construction:** [Implement Merkle tree construction utility](https://github.com/StaffPurse/staffpurse-app/issues/3) ✅ *(Completed by @mallison031)*
-- [ ] **Issue #4 — Stellar SDK Submission Logic:** [Implement Stellar SDK Soroban submission logic](https://github.com/StaffPurse/staffpurse-app/issues/4)
+- [x] **Issue #4 — Stellar SDK Submission Logic:** [Implement Stellar SDK Soroban submission logic](https://github.com/StaffPurse/staffpurse-app/issues/4)
 - [x] **Issue #5 — Resilience & Dead-Letter Queue:** [Implement retry and dead-letter queue for RPC failures](https://github.com/StaffPurse/staffpurse-app/issues/5) ✅ *(Completed by @mallison031)*
-- [ ] **Issue #6 — Database Migrations:** [Write Supabase SQL schema migrations for the transparency layer](https://github.com/StaffPurse/staffpurse-app/issues/6)
+- [x] **Issue #6 — Database Migrations:** [Write Supabase SQL schema migrations for the transparency layer](https://github.com/StaffPurse/staffpurse-app/issues/6)
 - [x] **Issue #7 — Edge Function CI Pipeline:** [Set up GitHub Actions CI for Edge Function validation](https://github.com/StaffPurse/staffpurse-app/issues/7) ✅ *(Completed by @mallison031)*
-- [ ] **Issue #8 — Hackathon Scripts Cleanup:** [Clean up leftover hackathon patch and fix scripts](https://github.com/StaffPurse/staffpurse-app/issues/8)
+- [x] **Issue #8 — Hackathon Scripts Cleanup:** [Clean up leftover hackathon patch and fix scripts](https://github.com/StaffPurse/staffpurse-app/issues/8)
 - [x] **Issue #9 — Test & Artifact Cleanup:** [Clean up leftover test scripts, diffs, and stray images](https://github.com/StaffPurse/staffpurse-app/issues/9) ✅ *(Completed by @mallison031)*
 - [x] **Issue #14 — Automated Daily Batch Scheduler:** [Configure automated daily batch scheduler via pg_cron and pg_net](https://github.com/StaffPurse/staffpurse-app/issues/14) ✅ *(Completed by @mallison031)*
-- [ ] **Issue #15 — Edge Function Setup & Keypair Guide:** [Author Supabase Edge Function environment setup and service keypair guide](https://github.com/StaffPurse/staffpurse-app/issues/15)
+- [x] **Issue #15 — Edge Function Setup & Keypair Guide:** [Author Supabase Edge Function environment setup and service keypair guide](https://github.com/StaffPurse/staffpurse-app/issues/15)
 - [x] **Issue #16 — Mobile Blockchain Verification Link:** [Add 'Verify on Stellar' link to Transaction Details in Flutter](https://github.com/StaffPurse/staffpurse-app/issues/16) ✅ *(Completed by @mallison031)*
-- [ ] **Issue #17 — Flutter CI Pipeline:** [Set up GitHub Actions CI workflow for Flutter analysis and testing](https://github.com/StaffPurse/staffpurse-app/issues/17)
+- [x] **Issue #17 — Flutter CI Pipeline:** [Set up GitHub Actions CI workflow for Flutter analysis and testing](https://github.com/StaffPurse/staffpurse-app/issues/17)
 
 ### 🔍 Identified Gaps & Action Items
 - [x] ~~**GAP-A1: Daily Batch Job Scheduler / Cron Trigger**~~ → Created as **Issue #14**

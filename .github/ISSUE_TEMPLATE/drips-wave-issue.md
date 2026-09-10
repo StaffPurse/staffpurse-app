@@ -13,7 +13,7 @@ assignees: ''
 > - [ROADMAP.md](https://github.com/StaffPurse/staffpurse-app/blob/main/ROADMAP.md)
 > - [CONTRIBUTING.md](https://github.com/StaffPurse/staffpurse-app/blob/main/CONTRIBUTING.md)
 > 
-> **Operating Constraints:** Do not extrapolate beyond the specified scope or rely on baseline assumptions. You must autonomously verify that the code passes all CI gates (`flutter test`) before marking this task as complete.
+> **Operating Constraints:** Do not extrapolate beyond the specified scope or rely on baseline assumptions. You must autonomously verify that the code passes all CI gates before marking this task as complete.
 
 ## Description
 **Context:** <what context>
@@ -21,6 +21,8 @@ assignees: ''
 **Task:** <what task>
 
 **Why it's independent:** <why>
+
+**Complexity & Points:** <e.g., Medium (150 pts)>
 
 ## What "done" looks like
 * <bullet points>
@@ -30,17 +32,17 @@ assignees: ''
 * Keep the scope strictly limited to this issue. Do not over-engineer.
 
 ## PR guidelines
-* Get assigned before starting.
+* Get assigned before starting. (Unassigned PRs may not be reviewed).
 * PR description must include: `Closes #[this issue]`.
 * Check off the corresponding box in `ROADMAP.md` upon completion!
 
 ---
 
 ### **Contact & Support**
-- [Telegram](https://t.me/+Gflo5jZStw1jMjE0)
-- [Discord](https://discord.gg/5aprtMSyR)
+Need help or architectural clarification before starting? See our [SUPPORT.md](https://github.com/StaffPurse/staffpurse-app/blob/main/.github/SUPPORT.md) for Discord and Telegram links.
 
 ---
 ### 📋 Before you start
 Please read our [Code Quality Standards](https://github.com/StaffPurse/staffpurse-app/blob/main/CONTRIBUTING.md). Before submitting a PR, ensure you run:
-- `flutter test`
+- `dart format .`
+- `flutter analyze`

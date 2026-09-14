@@ -10,10 +10,9 @@ CREATE TABLE anchored_batches (
     anchored_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Extend transaction_cache to store the batch it belongs to and its Merkle proof
+-- Extend transaction_cache to store the batch it belongs to
 ALTER TABLE transaction_cache
-ADD COLUMN batch_date TEXT REFERENCES anchored_batches(batch_date),
-ADD COLUMN merkle_proof JSONB;
+ADD COLUMN batch_date TEXT REFERENCES anchored_batches(batch_date);
 
 -- Create an index for quick lookups by batch date
 CREATE INDEX idx_transaction_cache_batch ON transaction_cache(batch_date);

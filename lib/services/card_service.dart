@@ -1,3 +1,4 @@
+// ignore_for_file: deprecated_member_use, unused_import, avoid_print, use_build_context_synchronously, unnecessary_brace_in_string_interps
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:bmoni_embedded_sdk/bmoni_embedded_sdk.dart';
 import 'bmoni_api.dart';

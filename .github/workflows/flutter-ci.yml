@@ -1,6 +1,8 @@
 name: Flutter CI
 
 on:
+  push:
+    branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
 
@@ -14,6 +16,8 @@ jobs:
           channel: 'stable'
       - name: Install dependencies
         run: flutter pub get
+      - name: Setup Env for CI
+        run: cp lib/env.example.dart lib/env.dart
       - name: Analyze project
         run: flutter analyze
       - name: Run tests

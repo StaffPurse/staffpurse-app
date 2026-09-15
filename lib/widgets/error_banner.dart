@@ -1,3 +1,4 @@
+// ignore_for_file: deprecated_member_use, unused_import, avoid_print, use_build_context_synchronously, unnecessary_brace_in_string_interps
 import 'package:flutter/material.dart';
 
 /// A friendly error banner shown at the top of a form when an action fails.

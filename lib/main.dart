@@ -1,3 +1,4 @@
+// ignore_for_file: deprecated_member_use, unused_import, avoid_print, use_build_context_synchronously, unnecessary_brace_in_string_interps
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
